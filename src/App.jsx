@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ProgressOverview from './components/ProgressOverview';
 import QuickStats from './components/QuickStats';
 import StudyPlan from './components/StudyPlan';
+import AllTasks from './components/AllTasks';
 import AddTaskModal from './components/AddTaskModal';
 
+const getTodayOffset = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+};
+
 const INITIAL_TASKS = [
-  { id: 1, title: 'Revise Stack', category: 'Data Structures', completed: true },
-  { id: 2, title: 'Practice Queue Implementation', category: 'Data Structures', completed: true },
-  { id: 3, title: 'Learn Sorting Algorithms', category: 'Algorithms', completed: false },
-  { id: 4, title: 'Revise Hash Tables', category: 'Data Structures', completed: false },
-  { id: 5, title: 'Solve Three DSA Problems', category: 'Practice', completed: false },
+  { id: 1, title: 'Revise Stack', category: 'Data Structures', date: getTodayOffset(0), completed: true },
+  { id: 2, title: 'Practice Queue Implementation', category: 'Data Structures', date: getTodayOffset(0), completed: true },
+  { id: 3, title: 'Learn Sorting Algorithms', category: 'Algorithms', date: getTodayOffset(0), completed: false },
+  { id: 4, title: 'Revise Hash Tables', category: 'Data Structures', date: getTodayOffset(1), completed: false },
+  { id: 5, title: 'Solve Three DSA Problems', category: 'Practice', date: getTodayOffset(2), completed: false },
 ];
 
 export default function App() {
@@ -39,6 +47,8 @@ export default function App() {
     setTasks((prevTasks) => [newTask, ...prevTasks]);
   };
 
+  const pendingCount = tasks.filter((t) => !t.completed).length;
+
   return (
     <div className="app-layout">
       {/* Sidebar Navigation */}
@@ -55,24 +65,68 @@ export default function App() {
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
 
         <main className="dashboard-content">
-          {/* Top Row: Daily Progress Overview + Quick Statistics */}
-          <div className="dashboard-top-grid">
-            <ProgressOverview tasks={tasks} />
-            <QuickStats 
-              streak={5} 
-              focusHours="3.5 hrs" 
-              weeklyCompleted={18} 
-              weeklyTotal={24} 
-            />
-          </div>
+          {/* View: Dashboard (Progress Overview & Quick Stats only, no task list) */}
+          {activeNav === 'dashboard' && (
+            <>
+              <div className="dashboard-top-grid">
+                <ProgressOverview tasks={tasks} />
+                <QuickStats 
+                  streak={5} 
+                  focusHours="3.5 hrs" 
+                  weeklyCompleted={18} 
+                  weeklyTotal={24} 
+                />
+              </div>
 
-          {/* Today's Study Plan Tasks */}
-          <StudyPlan
-            tasks={tasks}
-            onToggleTask={handleToggleTask}
-            onDeleteTask={handleDeleteTask}
-            onOpenAddModal={() => setIsModalOpen(true)}
-          />
+              {/* Quick Summary Card leading to My Study Plan */}
+              <div className="dashboard-summary-card">
+                <div>
+                  <h3 className="section-heading">Today's Focus Status</h3>
+                  <p className="summary-subtitle">
+                    You have <strong>{pendingCount}</strong> study {pendingCount === 1 ? 'task' : 'tasks'} remaining for today.
+                  </p>
+                </div>
+                <button 
+                  className="btn-primary" 
+                  onClick={() => setActiveNav('plan')}
+                >
+                  <BookOpenCheck size={16} />
+                  <span>Go to My Study Plan</span>
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* View: My Study Plan */}
+          {activeNav === 'plan' && (
+            <StudyPlan
+              tasks={tasks}
+              onToggleTask={handleToggleTask}
+              onDeleteTask={handleDeleteTask}
+              onOpenAddModal={() => setIsModalOpen(true)}
+            />
+          )}
+
+          {/* View: All Tasks with Date Cards */}
+          {activeNav === 'tasks' && (
+            <AllTasks
+              tasks={tasks}
+              onToggleTask={handleToggleTask}
+              onDeleteTask={handleDeleteTask}
+              onOpenAddModal={() => setIsModalOpen(true)}
+            />
+          )}
+
+          {/* View: Settings */}
+          {activeNav === 'settings' && (
+            <div className="settings-card">
+              <h3 className="section-heading">Workspace Settings</h3>
+              <p className="summary-subtitle" style={{ marginTop: '8px' }}>
+                Account preferences, daily targets, and notification settings will be available here.
+              </p>
+            </div>
+          )}
         </main>
       </div>
 

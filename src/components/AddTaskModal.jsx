@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { X, Plus, BookOpen } from 'lucide-react';
 
 export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
+  const todayStr = new Date().toISOString().split('T')[0];
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Data Structures');
+  const [date, setDate] = useState(todayStr);
 
   if (!isOpen) return null;
 
@@ -15,11 +17,13 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
       id: Date.now(),
       title: title.trim(),
       category,
+      date: date || todayStr,
       completed: false
     });
 
     setTitle('');
     setCategory('Data Structures');
+    setDate(todayStr);
     onClose();
   };
 
@@ -70,6 +74,18 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
                 <option value="Core CS">Core CS</option>
                 <option value="System Design">System Design</option>
               </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="task-date" className="form-label">Scheduled Date</label>
+              <input
+                id="task-date"
+                type="date"
+                className="form-input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
             </div>
           </div>
 
