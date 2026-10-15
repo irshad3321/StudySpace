@@ -1,29 +1,35 @@
 import React from 'react';
-import { Flame, Clock, TrendingUp } from 'lucide-react';
+import { Flame, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
 
-export default function QuickStats({ streak = 5, focusHours = '3.5 hrs', weeklyCompleted = 18, weeklyTotal = 24 }) {
+export default function QuickStats({ tasks = [] }) {
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.completed).length;
+  const pending = total - completed;
+  const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const streak = completed > 0 ? 1 : 0;
+
   const stats = [
     {
       id: 'streak',
       title: 'Current Streak',
-      value: `${streak} Days`,
-      subtitle: 'Personal best: 14 days',
+      value: `${streak} ${streak === 1 ? 'Day' : 'Days'}`,
+      subtitle: streak > 0 ? 'Active study streak' : 'Complete a task to start streak',
       icon: Flame,
       color: '#f97316'
     },
     {
-      id: 'focus',
-      title: 'Focus Time',
-      value: focusHours,
-      subtitle: 'Daily target: 5.0 hrs',
+      id: 'pending',
+      title: 'Pending Tasks',
+      value: `${pending}`,
+      subtitle: pending === 0 ? 'No pending tasks' : `${pending} waiting to complete`,
       icon: Clock,
       color: 'var(--accent)'
     },
     {
-      id: 'weekly',
-      title: 'Weekly Tasks',
-      value: `${weeklyCompleted} / ${weeklyTotal}`,
-      subtitle: `${Math.round((weeklyCompleted / weeklyTotal) * 100)}% on track this week`,
+      id: 'rate',
+      title: 'Completion Rate',
+      value: `${rate}%`,
+      subtitle: `${completed} of ${total} tasks finished`,
       icon: TrendingUp,
       color: '#059669'
     }

@@ -1,7 +1,10 @@
 import React from 'react';
-import { Menu, Bell, Calendar as CalendarIcon } from 'lucide-react';
+import { Menu, Bell, Calendar as CalendarIcon, LogIn } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header({ onOpenSidebar }) {
+  const { user, openAuthModal } = useAuth();
+
   // Format current date nicely
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', {
@@ -20,6 +23,15 @@ export default function Header({ onOpenSidebar }) {
     timeGreeting = 'Good evening';
   }
 
+  const getInitials = (name) => {
+    if (!name) return 'ST';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <header className="top-header">
       <div className="header-left">
@@ -31,7 +43,9 @@ export default function Header({ onOpenSidebar }) {
           <Menu size={22} />
         </button>
         <div>
-          <h1 className="greeting-title">{timeGreeting}, Irshad</h1>
+          <h1 className="greeting-title">
+            {timeGreeting}, {user ? user.name : 'Student'}
+          </h1>
           <p className="greeting-subtitle">Make today count. One task at a time.</p>
         </div>
       </div>
@@ -51,9 +65,20 @@ export default function Header({ onOpenSidebar }) {
           <span className="notification-badge-dot" />
         </button>
 
-        <div className="header-avatar" title="Irshad">
-          <span>IR</span>
-        </div>
+        {user ? (
+          <div className="header-avatar" title={user.name}>
+            <span>{getInitials(user.name)}</span>
+          </div>
+        ) : (
+          <button 
+            className="btn-header-signin" 
+            onClick={() => openAuthModal('login')}
+            title="Sign In"
+          >
+            <LogIn size={15} />
+            <span>Sign In</span>
+          </button>
+        )}
       </div>
     </header>
   );

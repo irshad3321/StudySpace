@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/environment.js';
 import apiRoutes from './routes/api.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import { notFoundHandler } from './middlewares/notFound.middleware.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 
 // Mount API routes
 app.use('/api', apiRoutes);
+app.use('/api/auth', authRoutes);
 
 // Catch-all 404 Not Found handler for unmatched routes
 app.use(notFoundHandler);

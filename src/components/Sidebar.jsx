@@ -6,16 +6,29 @@ import {
   CheckSquare, 
   Settings, 
   X,
-  Sparkles
+  LogOut,
+  LogIn
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ isOpen, onClose, activeNav, onSelectNav, taskCount }) {
+  const { user, logout, openAuthModal } = useAuth();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'plan', label: 'My Study Plan', icon: CalendarRange, badge: taskCount },
     { id: 'tasks', label: 'All Tasks', icon: CheckSquare },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const getInitials = (name) => {
+    if (!name) return 'ST';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
   return (
     <>
@@ -75,16 +88,34 @@ export default function Sidebar({ isOpen, onClose, activeNav, onSelectNav, taskC
 
         {/* User Profile Section at Bottom */}
         <div className="sidebar-footer">
-          <div className="user-profile-card">
-            <div className="avatar-badge">
-              <span>IR</span>
-              <span className="avatar-online-dot" />
+          {user ? (
+            <div className="user-profile-card">
+              <div className="avatar-badge">
+                <span>{getInitials(user.name)}</span>
+                <span className="avatar-online-dot" />
+              </div>
+              <div className="user-details" style={{ flex: 1 }}>
+                <span className="user-name">{user.name}</span>
+                <span className="user-role">{user.track || 'Student'}</span>
+              </div>
+              <button 
+                className="btn-logout" 
+                onClick={logout} 
+                title="Log out"
+                aria-label="Log out"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
-            <div className="user-details">
-              <span className="user-name">Irshad</span>
-              <span className="user-role">DSA & CS Prep</span>
-            </div>
-          </div>
+          ) : (
+            <button 
+              className="btn-signin-sidebar" 
+              onClick={() => openAuthModal('login')}
+            >
+              <LogIn size={16} />
+              <span>Sign In / Register</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

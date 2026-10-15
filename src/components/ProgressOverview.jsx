@@ -1,19 +1,23 @@
 import React from 'react';
 import { Target, Sparkles, CheckCircle2 } from 'lucide-react';
 
-export default function ProgressOverview({ tasks }) {
+export default function ProgressOverview({ tasks = [] }) {
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
   const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Encouraging message tailored to progress
-  let encouragementText = 'Ready to start? Pick your first task for today.';
-  if (percentage === 100) {
-    encouragementText = "Outstanding work! All of today's study goals are accomplished 🎉";
-  } else if (percentage >= 60) {
-    encouragementText = "More than halfway there! You're making excellent progress.";
-  } else if (percentage > 0) {
-    encouragementText = 'Great start! Keep the momentum going for a productive session.';
+  let encouragementText = 'No study tasks added yet. Add your first task to start tracking!';
+  if (totalTasks > 0) {
+    if (percentage === 100) {
+      encouragementText = "Outstanding work! All of today's study goals are accomplished 🎉";
+    } else if (percentage >= 60) {
+      encouragementText = "More than halfway there! You're making excellent progress.";
+    } else if (percentage > 0) {
+      encouragementText = 'Great start! Keep the momentum going for a productive session.';
+    } else {
+      encouragementText = 'Ready to start? Pick your first task for today.';
+    }
   }
 
   return (
@@ -42,7 +46,7 @@ export default function ProgressOverview({ tasks }) {
       </div>
 
       <div className="progress-encouragement">
-        {percentage === 100 ? (
+        {percentage === 100 && totalTasks > 0 ? (
           <CheckCircle2 size={16} className="encouragement-icon" style={{ color: 'var(--success)' }} />
         ) : (
           <Sparkles size={16} className="encouragement-icon" />

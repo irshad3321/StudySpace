@@ -84,7 +84,18 @@ export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAdd
             <div className="empty-icon">
               <BookOpen size={20} />
             </div>
-            <p>No tasks found in this view.</p>
+            <p style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+              {tasks.length === 0 ? 'Your study plan is empty.' : 'No tasks match this filter.'}
+            </p>
+            <p className="summary-subtitle">
+              {tasks.length === 0 ? 'Click "+ Add Task" to plan your study session.' : 'Try selecting "All" to view all your tasks.'}
+            </p>
+            {tasks.length === 0 && (
+              <button className="btn-primary" onClick={onOpenAddModal} style={{ marginTop: '8px' }}>
+                <Plus size={15} />
+                <span>Add Your First Task</span>
+              </button>
+            )}
           </div>
         ) : (
           filteredTasks.map((task) => {
@@ -113,10 +124,12 @@ export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAdd
                 </div>
 
                 <div className="task-right">
-                  {/* Category / Topic Label */}
-                  <span className={`category-badge ${getCategoryClass(task.category)}`}>
-                    {task.category}
-                  </span>
+                  {/* Category / Topic Label (optional) */}
+                  {task.category && (
+                    <span className={`category-badge ${getCategoryClass(task.category)}`}>
+                      {task.category}
+                    </span>
+                  )}
 
                   {/* Completion Status */}
                   <div className={`status-indicator ${isDone ? 'done' : 'pending'}`}>

@@ -221,9 +221,11 @@ export default function AllTasks({ tasks, onToggleTask, onDeleteTask, onOpenAddM
                         </div>
 
                         <div className="task-right">
-                          <span className={`category-badge ${getCategoryClass(task.category)}`}>
-                            {task.category}
-                          </span>
+                          {task.category && (
+                            <span className={`category-badge ${getCategoryClass(task.category)}`}>
+                              {task.category}
+                            </span>
+                          )}
 
                           <div className={`status-indicator ${isDone ? 'done' : 'pending'}`}>
                             {isDone ? (

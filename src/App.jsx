@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowRight, BookOpenCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, BookOpenCheck, Plus } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ProgressOverview from './components/ProgressOverview';
@@ -7,26 +7,41 @@ import QuickStats from './components/QuickStats';
 import StudyPlan from './components/StudyPlan';
 import AllTasks from './components/AllTasks';
 import AddTaskModal from './components/AddTaskModal';
-
-const getTodayOffset = (days) => {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
-};
-
-const INITIAL_TASKS = [
-  { id: 1, title: 'Revise Stack', category: 'Data Structures', date: getTodayOffset(0), completed: true },
-  { id: 2, title: 'Practice Queue Implementation', category: 'Data Structures', date: getTodayOffset(0), completed: true },
-  { id: 3, title: 'Learn Sorting Algorithms', category: 'Algorithms', date: getTodayOffset(0), completed: false },
-  { id: 4, title: 'Revise Hash Tables', category: 'Data Structures', date: getTodayOffset(1), completed: false },
-  { id: 5, title: 'Solve Three DSA Problems', category: 'Practice', date: getTodayOffset(2), completed: false },
-];
+import AuthModal from './components/AuthModal';
+import LoginPage from './components/LoginPage';
+import Settings from './components/Settings';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const { isAuthenticated, user } = useAuth();
+
+  // Load user's tasks from localStorage (defaults to empty array - no dummy data)
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const storageKey = user ? `studyspace_tasks_${user.id || user._id || 'guest'}` : 'studyspace_tasks';
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Sync tasks with localStorage whenever tasks state or user changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      const storageKey = user ? `studyspace_tasks_${user.id || user._id || 'guest'}` : 'studyspace_tasks';
+      localStorage.setItem(storageKey, JSON.stringify(tasks));
+    }
+  }, [tasks, isAuthenticated, user]);
+
+  // Auth Guard: User must log in first before accessing dashboard or other pages
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   // Toggle task completion
   const handleToggleTask = (taskId) => {
@@ -70,30 +85,39 @@ export default function App() {
             <>
               <div className="dashboard-top-grid">
                 <ProgressOverview tasks={tasks} />
-                <QuickStats 
-                  streak={5} 
-                  focusHours="3.5 hrs" 
-                  weeklyCompleted={18} 
-                  weeklyTotal={24} 
-                />
+                <QuickStats tasks={tasks} />
               </div>
 
               {/* Quick Summary Card leading to My Study Plan */}
               <div className="dashboard-summary-card">
                 <div>
-                  <h3 className="section-heading">Today's Focus Status</h3>
+                  <h3 className="section-heading">
+                    {tasks.length === 0 ? "Get Started with Today's Study Plan" : "Today's Focus Status"}
+                  </h3>
                   <p className="summary-subtitle">
-                    You have <strong>{pendingCount}</strong> study {pendingCount === 1 ? 'task' : 'tasks'} remaining for today.
+                    {tasks.length === 0
+                      ? 'No study tasks added yet. Plan your daily milestones to track your progress.'
+                      : `You have ${pendingCount} study ${pendingCount === 1 ? 'task' : 'tasks'} remaining for today.`}
                   </p>
                 </div>
-                <button 
-                  className="btn-primary" 
-                  onClick={() => setActiveNav('plan')}
-                >
-                  <BookOpenCheck size={16} />
-                  <span>Go to My Study Plan</span>
-                  <ArrowRight size={15} />
-                </button>
+                {tasks.length === 0 ? (
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <Plus size={16} />
+                    <span>Add First Task</span>
+                  </button>
+                ) : (
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setActiveNav('plan')}
+                  >
+                    <BookOpenCheck size={16} />
+                    <span>Go to My Study Plan</span>
+                    <ArrowRight size={15} />
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -119,14 +143,7 @@ export default function App() {
           )}
 
           {/* View: Settings */}
-          {activeNav === 'settings' && (
-            <div className="settings-card">
-              <h3 className="section-heading">Workspace Settings</h3>
-              <p className="summary-subtitle" style={{ marginTop: '8px' }}>
-                Account preferences, daily targets, and notification settings will be available here.
-              </p>
-            </div>
-          )}
+          {activeNav === 'settings' && <Settings />}
         </main>
       </div>
 
@@ -136,6 +153,9 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         onAddTask={handleAddTask}
       />
+
+      {/* Authentication Modal */}
+      <AuthModal />
     </div>
   );
 }
