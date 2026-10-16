@@ -13,6 +13,7 @@ const app = express();
 // Configure CORS for frontend origins with credentials for cookies
 const allowedOrigins = [
   config.frontendUrl,
+  'https://studyspace-zeta.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173'
 ];
