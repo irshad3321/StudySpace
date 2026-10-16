@@ -8,7 +8,12 @@ import { config } from '../config/environment.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  if (
+  // 1. Extract from httpOnly cookie first
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // 2. Fallback to Authorization Bearer header
+  else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer ')
   ) {

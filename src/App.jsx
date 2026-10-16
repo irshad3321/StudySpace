@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, BookOpenCheck, Plus } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Plus, Loader2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ProgressOverview from './components/ProgressOverview';
@@ -13,7 +13,7 @@ import Settings from './components/Settings';
 import { useAuth } from './context/AuthContext';
 
 export default function App() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   // Load user's tasks from localStorage (defaults to empty array - no dummy data)
   const [tasks, setTasks] = useState(() => {
@@ -30,13 +30,36 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Sync user-specific tasks when user logs in or switches
+  useEffect(() => {
+    if (user) {
+      const storageKey = `studyspace_tasks_${user.id || user._id || 'guest'}`;
+      try {
+        const saved = localStorage.getItem(storageKey);
+        setTasks(saved ? JSON.parse(saved) : []);
+      } catch {
+        setTasks([]);
+      }
+    }
+  }, [user?.id, user?._id]);
+
   // Sync tasks with localStorage whenever tasks state or user changes
   useEffect(() => {
-    if (isAuthenticated) {
-      const storageKey = user ? `studyspace_tasks_${user.id || user._id || 'guest'}` : 'studyspace_tasks';
+    if (isAuthenticated && user) {
+      const storageKey = `studyspace_tasks_${user.id || user._id || 'guest'}`;
       localStorage.setItem(storageKey, JSON.stringify(tasks));
     }
   }, [tasks, isAuthenticated, user]);
+
+  // Session Verification Loading Guard
+  if (isLoading) {
+    return (
+      <div className="auth-loading-screen">
+        <Loader2 size={32} className="spin-animate" style={{ color: 'var(--accent)' }} />
+        <span>Verifying your session...</span>
+      </div>
+    );
+  }
 
   // Auth Guard: User must log in first before accessing dashboard or other pages
   if (!isAuthenticated) {

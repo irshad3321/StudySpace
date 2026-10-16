@@ -9,6 +9,17 @@ const generateToken = (id) => {
   });
 };
 
+// Helper to set httpOnly cookie for JWT
+const sendTokenCookie = (res, token) => {
+  const isProd = config.nodeEnv === 'production';
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+};
+
 /**
  * Register a new user
  * POST /api/auth/register
@@ -49,11 +60,11 @@ export const register = async (req, res, next) => {
     });
 
     const token = generateToken(user._id);
+    sendTokenCookie(res, token);
 
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -100,11 +111,85 @@ export const login = async (req, res, next) => {
     }
 
     const token = generateToken(user._id);
+    sendTokenCookie(res, token);
 
     res.status(200).json({
       success: true,
       message: 'Logged in successfully',
-      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        track: user.track
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Logout user by clearing httpOnly cookie
+ * POST /api/auth/logout
+ */
+export const logout = async (req, res, next) => {
+  try {
+    const isProd = config.nodeEnv === 'production';
+    res.cookie('token', '', {
+      httpOnly: true,
+      expires: new Date(0),
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset user password (Forgot Password)
+ * POST /api/auth/reset-password
+ */
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both your registered email and a new password'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address'
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    const token = generateToken(user._id);
+    sendTokenCookie(res, token);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! You are now logged in.',
       user: {
         id: user._id,
         name: user.name,
@@ -131,3 +216,5 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+

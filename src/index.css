@@ -1588,6 +1588,78 @@ a {
   font-size: 0.75rem;
 }
 
+/* Auth Form Label Row & Forgot Password Link */
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.forgot-password-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.auth-recovery-header {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.auth-back-link:hover {
+  color: var(--text-main);
+  background-color: var(--bg-hover);
+}
+
+.auth-recovery-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.auth-sub-instruction {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin: 0 0 6px 0;
+  line-height: 1.45;
+}
+
+
 /* Mobile Sidebar Drawer Overlay */
 .mobile-overlay {
   display: none;
@@ -1698,3 +1770,27 @@ a {
     padding-left: 34px;
   }
 }
+
+/* Auth Verification Loading Screen */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animate {
+  animation: spin 1s linear infinite;
+}
+
+.auth-loading-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+

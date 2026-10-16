@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Check } from 'lucide-react';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
 
   // Load preferences from localStorage or defaults
   const savedPrefs = (() => {
@@ -23,6 +23,14 @@ export default function Settings() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
   const [saveBanner, setSaveBanner] = useState('');
+
+  // Keep name in sync if user loads later
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+      setTempName(user.name);
+    }
+  }, [user?.name]);
 
   // Apply dark mode theme to HTML root
   useEffect(() => {
@@ -50,8 +58,12 @@ export default function Settings() {
   };
 
   const handleSaveName = () => {
-    if (tempName.trim()) {
-      setName(tempName.trim());
+    const trimmed = tempName.trim();
+    if (trimmed) {
+      setName(trimmed);
+      if (updateUserProfile) {
+        updateUserProfile({ name: trimmed });
+      }
       setIsEditingName(false);
       showNotification('Profile name updated');
     }
