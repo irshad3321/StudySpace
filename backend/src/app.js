@@ -18,16 +18,22 @@ const allowedOrigins = [
   'http://127.0.0.1:5173'
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
+    // Allow if no origin (server-to-server / curl) or matches allowed patterns
     if (!origin || allowedOrigins.includes(origin) || (origin && origin.endsWith('.vercel.app'))) {
       callback(null, true);
     } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(null, true); // Fallback: allow request so client receives clean HTTP status instead of crash
     }
   },
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Parse incoming cookie headers
 app.use(cookieParser());

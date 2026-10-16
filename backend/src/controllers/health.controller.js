@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { lastConnectionError } from '../config/database.js';
 
 /**
  * Controller to handle API health check
@@ -16,7 +17,8 @@ export const getHealthStatus = (req, res) => {
     database: {
       status: dbState,
       isConfigured: isMongoUriConfigured,
-      host: mongoose.connection.host || null
+      host: mongoose.connection.host || null,
+      lastError: lastConnectionError || null
     },
     timestamp: new Date().toISOString()
   });
