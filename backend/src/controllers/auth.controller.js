@@ -217,4 +217,45 @@ export const getMe = async (req, res, next) => {
   }
 };
 
+/**
+ * Update current authenticated user's profile
+ * PUT /api/auth/profile
+ */
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { name, track } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (name && name.trim()) {
+      user.name = name.trim();
+    }
+
+    if (track && track.trim()) {
+      user.track = track.trim();
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        track: user.track
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 

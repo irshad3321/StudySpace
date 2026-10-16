@@ -52,20 +52,30 @@ export default function Settings() {
     localStorage.setItem('studyspace_settings', JSON.stringify(prefs));
   }, [name, email, darkMode, reminder]);
 
+  const [savingName, setSavingName] = useState(false);
+
   const showNotification = (msg) => {
     setSaveBanner(msg);
     setTimeout(() => setSaveBanner(''), 2500);
   };
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     const trimmed = tempName.trim();
     if (trimmed) {
+      setSavingName(true);
       setName(trimmed);
       if (updateUserProfile) {
-        updateUserProfile({ name: trimmed });
+        const res = await updateUserProfile({ name: trimmed });
+        if (res && res.success) {
+          showNotification('Profile name saved to database');
+        } else {
+          showNotification('Profile name updated locally');
+        }
+      } else {
+        showNotification('Profile name updated');
       }
+      setSavingName(false);
       setIsEditingName(false);
-      showNotification('Profile name updated');
     }
   };
 

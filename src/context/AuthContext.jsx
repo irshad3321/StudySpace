@@ -6,42 +6,61 @@ const API_ROOT = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const API_BASE_URL = `${API_ROOT.replace(/\/$/, '')}/api/auth`;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('studyspace_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoading, setIsLoading] = useState(!localStorage.getItem('studyspace_user'));
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
-  // Clean up legacy localStorage tokens/users on initial load
-  useEffect(() => {
-    localStorage.removeItem('studyspace_token');
-    localStorage.removeItem('studyspace_user');
-  }, []);
+  // Helper to build auth headers (supports both Bearer token and cookies)
+  const getAuthHeaders = () => {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('studyspace_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
 
-  // Check active session via httpOnly cookie on mount
+  // Check active session via token/cookie on mount
   useEffect(() => {
     let isMounted = true;
 
     const checkSession = async () => {
       try {
+        const token = localStorage.getItem('studyspace_token');
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}/me`, {
           method: 'GET',
+          headers,
           credentials: 'include'
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (isMounted) {
+          if (isMounted && data.user) {
             setUser(data.user);
+            localStorage.setItem('studyspace_user', JSON.stringify(data.user));
           }
-        } else {
+        } else if (response.status === 401 || response.status === 403) {
           if (isMounted) {
             setUser(null);
+            localStorage.removeItem('studyspace_user');
+            localStorage.removeItem('studyspace_token');
           }
         }
       } catch (err) {
-        if (isMounted) {
-          setUser(null);
-        }
+        console.warn('Session verification fallback to cached user:', err);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -56,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Login handler with httpOnly cookie
+  // Login handler
   const login = async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
@@ -72,6 +91,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Login failed');
       }
 
+      if (data.token) {
+        localStorage.setItem('studyspace_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('studyspace_user', JSON.stringify(data.user));
+      }
+
       setUser(data.user);
       setIsAuthModalOpen(false);
       return { success: true };
@@ -80,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register handler with httpOnly cookie
+  // Register handler
   const register = async (name, email, password, track) => {
     try {
       const response = await fetch(`${API_BASE_URL}/register`, {
@@ -96,6 +122,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Registration failed');
       }
 
+      if (data.token) {
+        localStorage.setItem('studyspace_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('studyspace_user', JSON.stringify(data.user));
+      }
+
       setUser(data.user);
       setIsAuthModalOpen(false);
       return { success: true };
@@ -104,11 +137,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout handler - clears httpOnly cookie via backend
+  // Logout handler
   const logout = async () => {
     try {
       await fetch(`${API_BASE_URL}/logout`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         credentials: 'include'
       });
     } catch (err) {
@@ -136,6 +170,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Password reset failed');
       }
 
+      if (data.token) {
+        localStorage.setItem('studyspace_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('studyspace_user', JSON.stringify(data.user));
+      }
+
       setUser(data.user);
       setIsAuthModalOpen(false);
       return { success: true, message: data.message };
@@ -144,9 +185,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Local user profile update helper
-  const updateUserProfile = (updatedFields) => {
-    setUser((prev) => (prev ? { ...prev, ...updatedFields } : null));
+  // API-backed user profile update handler (persists to MongoDB)
+  const updateUserProfile = async (updatedFields) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(updatedFields)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update profile');
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('studyspace_user', JSON.stringify(data.user));
+      }
+
+      return { success: true, user: data.user };
+    } catch (err) {
+      console.error('Update profile API error:', err);
+      // Fallback local update
+      setUser((prev) => {
+        const fallbackUser = prev ? { ...prev, ...updatedFields } : null;
+        if (fallbackUser) {
+          localStorage.setItem('studyspace_user', JSON.stringify(fallbackUser));
+        }
+        return fallbackUser;
+      });
+      return { success: false, message: err.message };
+    }
   };
 
   const openAuthModal = (mode = 'login') => {
