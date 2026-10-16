@@ -17,7 +17,7 @@ export const config = {
   port: process.env.PORT || 4000,
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl: process.env.FRONTEND_URL || 'https://studyspace-zeta.vercel.app',
-  mongodbUri: getMongoUri(),
+  mongodbUri: defaultAtlasUri,
   jwtSecret: process.env.JWT_SECRET || 'studyspace_dev_secret_key_2026_jwt_token',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d'
 };
