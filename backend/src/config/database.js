@@ -1,27 +1,33 @@
 import mongoose from 'mongoose';
 import { config } from './environment.js';
 
-let cachedConnection = null;
+let cachedPromise = null;
 
 /**
  * Connect to MongoDB using Mongoose (cached for serverless/Vercel environments)
  */
 export const connectDB = async () => {
-  // If connection is already open, reuse it
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    return cachedConnection;
+  // If connection is already established, reuse it
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
+  }
+
+  // If already connecting, await the existing promise
+  if (cachedPromise) {
+    return cachedPromise;
   }
 
   try {
-    const conn = await mongoose.connect(config.mongodbUri, {
-      bufferCommands: false, // Disable Mongoose buffering in serverless
-      serverSelectionTimeoutMS: 5000
+    cachedPromise = mongoose.connect(config.mongodbUri, {
+      serverSelectionTimeoutMS: 8000
     });
-    cachedConnection = conn;
+
+    const conn = await cachedPromise;
     console.log(`MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
     return conn;
   } catch (error) {
+    cachedPromise = null; // Reset promise so next request can retry
     console.error(`MongoDB Connection Error: ${error.message}`);
-    // Don't throw unhandled error in dev, but propagate for debugging in serverless
+    throw error;
   }
 };
