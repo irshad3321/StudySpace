@@ -1,12 +1,47 @@
-import React, { useState } from 'react';
-import { X, Plus, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, BookOpen, Pencil, Check } from 'lucide-react';
 
-export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
+export default function AddTaskModal({ 
+  isOpen, 
+  onClose, 
+  onAddTask, 
+  taskToEdit = null, 
+  onEditTask = null 
+}) {
   const todayStr = new Date().toISOString().split('T')[0];
   const [title, setTitle] = useState('');
   const [subtopics, setSubtopics] = useState([]);
   const [currentSubtopic, setCurrentSubtopic] = useState('');
   const [date, setDate] = useState(todayStr);
+
+  const isEditing = !!taskToEdit;
+
+  useEffect(() => {
+    if (taskToEdit) {
+      setTitle(taskToEdit.title || '');
+      if (Array.isArray(taskToEdit.subtopics) && taskToEdit.subtopics.length > 0) {
+        setSubtopics([...taskToEdit.subtopics]);
+      } else if (taskToEdit.details) {
+        // Convert legacy details into a subtopic
+        setSubtopics([
+          {
+            id: `sub_${Date.now()}`,
+            text: taskToEdit.details,
+            completed: !!taskToEdit.completed
+          }
+        ]);
+      } else {
+        setSubtopics([]);
+      }
+      setDate(taskToEdit.date || todayStr);
+      setCurrentSubtopic('');
+    } else {
+      setTitle('');
+      setSubtopics([]);
+      setDate(todayStr);
+      setCurrentSubtopic('');
+    }
+  }, [taskToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -50,13 +85,27 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
       });
     }
 
-    onAddTask({
-      id: Date.now(),
-      title: title.trim(),
-      subtopics: finalSubtopics,
-      date: date || todayStr,
-      completed: false
-    });
+    if (isEditing && onEditTask) {
+      const allDone = finalSubtopics.length > 0 
+        ? finalSubtopics.every(s => s.completed) 
+        : (taskToEdit ? taskToEdit.completed : false);
+
+      onEditTask({
+        ...taskToEdit,
+        title: title.trim(),
+        subtopics: finalSubtopics,
+        date: date || todayStr,
+        completed: allDone
+      });
+    } else if (onAddTask) {
+      onAddTask({
+        id: Date.now(),
+        title: title.trim(),
+        subtopics: finalSubtopics,
+        date: date || todayStr,
+        completed: false
+      });
+    }
 
     setTitle('');
     setSubtopics([]);
@@ -70,8 +119,14 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={18} style={{ color: 'var(--accent)' }} />
-            <h2 id="modal-heading" className="modal-title">Add Study Task</h2>
+            {isEditing ? (
+              <Pencil size={18} style={{ color: 'var(--accent)' }} />
+            ) : (
+              <BookOpen size={18} style={{ color: 'var(--accent)' }} />
+            )}
+            <h2 id="modal-heading" className="modal-title">
+              {isEditing ? 'Edit Study Task' : 'Add Study Task'}
+            </h2>
           </div>
           <button 
             className="modal-close-btn" 
@@ -105,7 +160,7 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
                 </label>
                 {subtopics.length > 0 && (
                   <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
-                    {subtopics.length} {subtopics.length === 1 ? 'subtopic' : 'subtopics'} added
+                    {subtopics.length} {subtopics.length === 1 ? 'subtopic' : 'subtopics'}
                   </span>
                 )}
               </div>
@@ -183,8 +238,17 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
               type="submit" 
               className="btn-primary"
             >
-              <Plus size={16} />
-              <span>Add Task</span>
+              {isEditing ? (
+                <>
+                  <Check size={16} />
+                  <span>Save Changes</span>
+                </>
+              ) : (
+                <>
+                  <Plus size={16} />
+                  <span>Add Task</span>
+                </>
+              )}
             </button>
           </div>
         </form>

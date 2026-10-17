@@ -29,6 +29,7 @@ export default function App() {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
   // Sync user-specific tasks when user logs in or switches
   useEffect(() => {
@@ -116,6 +117,24 @@ export default function App() {
     setTasks((prevTasks) => [newTask, ...prevTasks]);
   };
 
+  // Open edit modal for a task
+  const handleOpenEditModal = (task) => {
+    setEditingTask(task);
+    setIsModalOpen(true);
+  };
+
+  // Edit task handler
+  const handleEditTask = (updatedTask) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+    );
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTask(null);
+  };
+
   const pendingCount = tasks.filter((t) => !t.completed).length;
 
   return (
@@ -157,7 +176,10 @@ export default function App() {
                 {tasks.length === 0 ? (
                   <button 
                     className="btn-primary" 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setEditingTask(null);
+                      setIsModalOpen(true);
+                    }}
                   >
                     <Plus size={16} />
                     <span>Add First Task</span>
@@ -183,7 +205,12 @@ export default function App() {
               onToggleTask={handleToggleTask}
               onToggleSubtopic={handleToggleSubtopic}
               onDeleteTask={handleDeleteTask}
-              onOpenAddModal={() => setIsModalOpen(true)}
+              onEditTask={handleOpenEditModal}
+              onOpenAddModal={() => {
+                setEditingTask(null);
+                setIsModalOpen(true);
+              }}
+              onSelectNav={(navId) => setActiveNav(navId)}
             />
           )}
 
@@ -191,10 +218,12 @@ export default function App() {
           {activeNav === 'tasks' && (
             <AllTasks
               tasks={tasks}
-              onToggleTask={handleToggleTask}
-              onToggleSubtopic={handleToggleSubtopic}
+              onEditTask={handleOpenEditModal}
               onDeleteTask={handleDeleteTask}
-              onOpenAddModal={() => setIsModalOpen(true)}
+              onOpenAddModal={() => {
+                setEditingTask(null);
+                setIsModalOpen(true);
+              }}
             />
           )}
 
@@ -203,11 +232,13 @@ export default function App() {
         </main>
       </div>
 
-      {/* Add Task Modal */}
+      {/* Add / Edit Task Modal */}
       <AddTaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onAddTask={handleAddTask}
+        taskToEdit={editingTask}
+        onEditTask={handleEditTask}
       />
 
       {/* Authentication Modal */}

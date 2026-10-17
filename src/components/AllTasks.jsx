@@ -7,10 +7,13 @@ import {
   Trash2, 
   CheckCircle2, 
   CircleDashed,
-  BookOpen
+  BookOpen,
+  Pencil,
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 
-export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDeleteTask, onOpenAddModal }) {
+export default function AllTasks({ tasks, onEditTask, onDeleteTask, onOpenAddModal }) {
   const [dateFilter, setDateFilter] = useState('all');
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -30,7 +33,7 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
 
   // Helper to format date string
   const formatDateLabel = (dateStr) => {
-    if (!dateStr) return { title: 'Unscheduled', relative: 'No Date' };
+    if (!dateStr) return { title: 'Unscheduled', relative: 'No Date', diffDays: 0, pillClass: 'pill-today' };
     
     // Parse date components safely to prevent timezone shift
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -70,6 +73,14 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
     return { title: formatted, relative, pillClass, diffDays };
   };
 
+  // Count totals for filter chips
+  const missedTotalCount = tasks.filter((t) => {
+    const { diffDays } = formatDateLabel(t.date || todayStr);
+    return diffDays < 0 && !t.completed;
+  }).length;
+
+  const coveredTotalCount = tasks.filter((t) => t.completed).length;
+
   // Filter tasks based on selected date filter
   const filteredTasks = tasks.filter((task) => {
     const taskDate = task.date || todayStr;
@@ -78,6 +89,7 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
     if (dateFilter === 'today') return diffDays === 0;
     if (dateFilter === 'tomorrow') return diffDays === 1;
     if (dateFilter === 'upcoming') return diffDays >= 0;
+    if (dateFilter === 'missed') return diffDays < 0 && !task.completed;
     if (dateFilter === 'completed') return task.completed;
     return true; // 'all'
   });
@@ -107,7 +119,7 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
             <div>
               <h2 className="section-heading">All Study Tasks by Date</h2>
               <p className="summary-subtitle">
-                Scheduled study milestones and timeline cards
+                Scheduled study milestones and timeline review of covered topics
               </p>
             </div>
           </div>
@@ -140,6 +152,18 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
             >
               Upcoming
             </button>
+            <button
+              className={`chip-btn chip-missed ${dateFilter === 'missed' ? 'active' : ''}`}
+              onClick={() => setDateFilter('missed')}
+            >
+              Not Covered {missedTotalCount > 0 ? `(${missedTotalCount})` : ''}
+            </button>
+            <button
+              className={`chip-btn ${dateFilter === 'completed' ? 'active' : ''}`}
+              onClick={() => setDateFilter('completed')}
+            >
+              Covered ({coveredTotalCount})
+            </button>
           </div>
 
           <button 
@@ -168,7 +192,8 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
             const dateTasks = groupedTasks[dateKey];
             const dateMeta = formatDateLabel(dateKey);
             const completedCount = dateTasks.filter(t => t.completed).length;
-            const allDateDone = completedCount === dateTasks.length;
+            const missedInDate = dateTasks.filter(t => !t.completed && dateMeta.diffDays < 0).length;
+            const allDateDone = dateTasks.length > 0 && completedCount === dateTasks.length;
 
             return (
               <div key={dateKey} className="date-group-card">
@@ -184,78 +209,74 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
 
                   <div className="date-card-meta-right">
                     <span className="date-completion-ratio">
-                      {completedCount} of {dateTasks.length} done
+                      {completedCount} of {dateTasks.length} covered
                     </span>
                     {allDateDone && (
                       <span className="date-all-done-badge">
-                        <Check size={12} strokeWidth={3} /> Completed
+                        <Check size={12} strokeWidth={3} /> All Covered
+                      </span>
+                    )}
+                    {missedInDate > 0 && (
+                      <span className="date-missed-badge">
+                        <AlertCircle size={12} /> {missedInDate} not covered
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Task Items inside this Date Card */}
+                {/* Task Items inside this Date Card (Review Log - No interactive check buttons) */}
                 <div className="date-card-tasks">
                   {dateTasks.map((task) => {
                     const isDone = task.completed;
+                    const isMissed = dateMeta.diffDays < 0 && !isDone;
                     const hasSubtopics = Array.isArray(task.subtopics) && task.subtopics.length > 0;
                     const completedSubs = hasSubtopics ? task.subtopics.filter(s => s.completed).length : 0;
 
                     return (
                       <div 
                         key={task.id} 
-                        className={`task-item ${isDone ? 'completed' : ''}`}
+                        className={`task-item all-tasks-item ${isDone ? 'completed' : ''} ${isMissed ? 'missed' : ''}`}
                       >
                         <div className="task-left">
-                          <button
-                            type="button"
-                            role="checkbox"
-                            aria-checked={isDone}
-                            aria-label={`Mark "${task.title}" as ${isDone ? 'incomplete' : 'complete'}`}
-                            className="custom-checkbox"
-                            onClick={() => onToggleTask(task.id)}
-                          >
-                            {isDone && <Check size={14} strokeWidth={3} />}
-                          </button>
+                          {/* Static Status Icon - No interactive toggle button */}
+                          <div className={`all-tasks-status-icon ${isDone ? 'covered' : isMissed ? 'missed' : 'planned'}`}>
+                            {isDone ? (
+                              <Check size={13} strokeWidth={3} />
+                            ) : isMissed ? (
+                              <AlertCircle size={13} strokeWidth={2.5} />
+                            ) : (
+                              <CircleDashed size={13} />
+                            )}
+                          </div>
 
                           <div className="task-details">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <span className="task-title">{task.title}</span>
+                              <span className={`task-title ${isMissed ? 'missed-title' : ''}`}>
+                                {task.title}
+                              </span>
                               {hasSubtopics && (
-                                <span className="task-subtopics-badge">
-                                  {completedSubs}/{task.subtopics.length} done
+                                <span className={`task-subtopics-badge ${isMissed ? 'missed-badge' : ''}`}>
+                                  {completedSubs}/{task.subtopics.length} covered
                                 </span>
                               )}
                             </div>
 
-                            {/* Multiple Subtopics with small circular checkmarks */}
+                            {/* Subtopics review log without interactive checkboxes */}
                             {hasSubtopics && (
-                              <div className="task-subtopics-list">
+                              <div className="task-subtopics-list all-tasks-subtopics">
                                 {task.subtopics.map((sub) => {
                                   const isSubDone = sub.completed;
                                   return (
                                     <div 
                                       key={sub.id} 
-                                      className={`subtopic-item ${isSubDone ? 'completed' : ''}`}
+                                      className={`subtopic-item ${isSubDone ? 'completed' : isMissed ? 'missed' : ''}`}
                                     >
-                                      <button
-                                        type="button"
-                                        role="checkbox"
-                                        aria-checked={isSubDone}
-                                        className="subtopic-circle-btn"
-                                        onClick={() => onToggleSubtopic && onToggleSubtopic(task.id, sub.id)}
-                                        aria-label={`Mark "${sub.text}" as ${isSubDone ? 'incomplete' : 'complete'}`}
-                                        title={isSubDone ? 'Mark as incomplete' : 'Mark as complete'}
-                                      >
-                                        {isSubDone ? (
-                                          <span className="subtopic-circle-checked">
-                                            <Check size={9} strokeWidth={3.5} />
-                                          </span>
-                                        ) : (
-                                          <span className="subtopic-circle-empty" />
-                                        )}
-                                      </button>
-                                      <span className="subtopic-text">{sub.text}</span>
+                                      <span className={`all-tasks-subtopic-bullet ${isSubDone ? 'covered' : isMissed ? 'missed' : 'planned'}`}>
+                                        {isSubDone ? <Check size={8} strokeWidth={3.5} /> : null}
+                                      </span>
+                                      <span className={`subtopic-text ${isSubDone ? 'covered-text' : isMissed ? 'missed-text' : ''}`}>
+                                        {sub.text}
+                                      </span>
                                     </div>
                                   );
                                 })}
@@ -264,7 +285,7 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
 
                             {/* Backwards compatibility for single-detail tasks */}
                             {task.details && !hasSubtopics && (
-                              <span className="task-subtext">{task.details}</span>
+                              <span className={`task-subtext ${isMissed ? 'missed-text' : ''}`}>{task.details}</span>
                             )}
                           </div>
                         </div>
@@ -276,28 +297,45 @@ export default function AllTasks({ tasks, onToggleTask, onToggleSubtopic, onDele
                             </span>
                           )}
 
-                          <div className={`status-indicator ${isDone ? 'done' : 'pending'}`}>
+                          {/* Status Tag */}
+                          <div className={`status-indicator ${isDone ? 'done' : isMissed ? 'missed' : 'pending'}`}>
                             {isDone ? (
                               <>
                                 <CheckCircle2 size={13} />
-                                <span>Completed</span>
+                                <span>Covered</span>
+                              </>
+                            ) : isMissed ? (
+                              <>
+                                <AlertCircle size={13} />
+                                <span>Not Covered</span>
                               </>
                             ) : (
                               <>
-                                <CircleDashed size={13} />
-                                <span>Pending</span>
+                                <Clock size={13} />
+                                <span>Planned</span>
                               </>
                             )}
                           </div>
 
-                          <button
-                            className="task-delete-btn"
-                            onClick={() => onDeleteTask(task.id)}
-                            title="Delete task"
-                            aria-label={`Delete task ${task.title}`}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {/* Action Buttons: Edit & Delete */}
+                          <div className="task-actions-group">
+                            <button
+                              className="task-action-btn edit-btn"
+                              onClick={() => onEditTask && onEditTask(task)}
+                              title="Edit task / Move to today"
+                              aria-label={`Edit task ${task.title}`}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              className="task-action-btn delete-btn"
+                              onClick={() => onDeleteTask(task.id)}
+                              title="Delete task"
+                              aria-label={`Delete task ${task.title}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );

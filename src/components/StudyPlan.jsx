@@ -4,14 +4,37 @@ import {
   Plus, 
   Trash2, 
   CheckCircle2, 
-  CircleDashed,
-  BookOpen
+  CircleDashed, 
+  BookOpen,
+  Pencil,
+  AlertCircle
 } from 'lucide-react';
 
-export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDeleteTask, onOpenAddModal }) {
+export default function StudyPlan({ 
+  tasks, 
+  onToggleTask, 
+  onToggleSubtopic, 
+  onDeleteTask, 
+  onEditTask,
+  onOpenAddModal,
+  onSelectNav
+}) {
   const [filter, setFilter] = useState('all');
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const filteredTasks = tasks.filter(task => {
+  // In My Study Plan: ONLY show tasks scheduled for today (past completed tasks are archived to All Tasks)
+  const todayTasks = tasks.filter(task => {
+    const taskDate = task.date || todayStr;
+    return taskDate === todayStr;
+  });
+
+  // Track past uncovered tasks (from yesterday or earlier) to alert the user
+  const missedPastTasks = tasks.filter(task => {
+    const taskDate = task.date || todayStr;
+    return taskDate < todayStr && !task.completed;
+  });
+
+  const filteredTasks = todayTasks.filter(task => {
     if (filter === 'pending') return !task.completed;
     if (filter === 'completed') return task.completed;
     return true;
@@ -30,7 +53,7 @@ export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDel
     }
   };
 
-  const pendingCount = tasks.filter(t => !t.completed).length;
+  const pendingCount = todayTasks.filter(t => !t.completed).length;
 
   return (
     <section className="study-plan-section" aria-labelledby="study-plan-heading">
@@ -49,7 +72,7 @@ export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDel
               className={`chip-btn ${filter === 'all' ? 'active' : ''}`}
               onClick={() => setFilter('all')}
             >
-              All ({tasks.length})
+              All ({todayTasks.length})
             </button>
             <button
               className={`chip-btn ${filter === 'pending' ? 'active' : ''}`}
@@ -61,7 +84,7 @@ export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDel
               className={`chip-btn ${filter === 'completed' ? 'active' : ''}`}
               onClick={() => setFilter('completed')}
             >
-              Completed ({tasks.length - pendingCount})
+              Completed ({todayTasks.length - pendingCount})
             </button>
           </div>
 
@@ -76,6 +99,32 @@ export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDel
           </button>
         </div>
       </div>
+
+      {/* Alert banner if there are uncovered topics from yesterday / past days */}
+      {missedPastTasks.length > 0 && (
+        <div className="study-plan-missed-alert">
+          <div className="missed-alert-content">
+            <div className="missed-alert-icon-wrap">
+              <AlertCircle size={18} />
+            </div>
+            <div>
+              <div className="missed-alert-title">
+                {missedPastTasks.length} {missedPastTasks.length === 1 ? 'topic was' : 'topics were'} not covered yesterday / past days
+              </div>
+              <div className="missed-alert-subtext">
+                These are highlighted in red in All Tasks so you can catch up.
+              </div>
+            </div>
+          </div>
+          <button 
+            type="button"
+            className="missed-alert-action-btn"
+            onClick={() => onSelectNav && onSelectNav('tasks')}
+          >
+            Review Missed Topics &rarr;
+          </button>
+        </div>
+      )}
 
       {/* Task List */}
       <div className="task-list">
@@ -195,15 +244,25 @@ export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDel
                     )}
                   </div>
 
-                  {/* Delete Task Button */}
-                  <button
-                    className="task-delete-btn"
-                    onClick={() => onDeleteTask(task.id)}
-                    title="Delete task"
-                    aria-label={`Delete task ${task.title}`}
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {/* Action Buttons: Edit & Delete */}
+                  <div className="task-actions-group">
+                    <button
+                      className="task-action-btn edit-btn"
+                      onClick={() => onEditTask && onEditTask(task)}
+                      title="Edit task"
+                      aria-label={`Edit task ${task.title}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className="task-action-btn delete-btn"
+                      onClick={() => onDeleteTask(task.id)}
+                      title="Delete task"
+                      aria-label={`Delete task ${task.title}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

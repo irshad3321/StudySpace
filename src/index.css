@@ -1429,6 +1429,46 @@ a {
   color: var(--text-muted);
 }
 
+/* Task Actions Group (Edit & Delete) */
+.task-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.task-item:hover .task-actions-group {
+  opacity: 1;
+}
+
+.task-action-btn {
+  color: var(--text-muted);
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.task-action-btn.edit-btn:hover {
+  color: var(--accent);
+  background-color: var(--accent-subtle);
+}
+
+.task-action-btn.delete-btn:hover {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+[data-theme="dark"] .task-action-btn.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+/* Also support legacy task-delete-btn */
 .task-delete-btn {
   opacity: 0;
   color: var(--text-muted);
@@ -1444,6 +1484,380 @@ a {
 .task-delete-btn:hover {
   color: #ef4444;
   background-color: #fef2f2;
+}
+
+/* Study Plan Missed Tasks Warning Banner */
+.study-plan-missed-alert {
+  margin: 14px 20px 4px 20px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+[data-theme="dark"] .study-plan-missed-alert {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+  border-left-color: #ef4444;
+}
+
+.missed-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.missed-alert-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.missed-alert-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #b91c1c;
+  margin-bottom: 2px;
+}
+
+[data-theme="dark"] .missed-alert-title {
+  color: #f87171;
+}
+
+.missed-alert-subtext {
+  font-size: 0.775rem;
+  color: #991b1b;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .missed-alert-subtext {
+  color: #fca5a5;
+}
+
+.missed-alert-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
+}
+
+.missed-alert-action-btn:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Filter Chips (AllTasks & Study Plan) */
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.775rem;
+  font-weight: 600;
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chip-btn:hover {
+  color: var(--text-main);
+  background-color: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.chip-btn.active {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.chip-btn.chip-missed.active {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.chip-btn.chip-missed:hover:not(.active) {
+  border-color: #fca5a5;
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+[data-theme="dark"] .chip-btn.chip-missed:hover:not(.active) {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+/* Date Groups List in All Tasks */
+.date-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.date-group-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.date-card-header {
+  padding: 14px 20px;
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.date-card-title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-card-icon {
+  color: var(--accent);
+}
+
+.date-card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.date-relative-pill {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.725rem;
+  font-weight: 600;
+}
+
+.date-relative-pill.pill-today {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.date-relative-pill.pill-tomorrow {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.date-relative-pill.pill-past {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.date-relative-pill.pill-upcoming {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+[data-theme="dark"] .date-relative-pill.pill-past {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.date-card-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-completion-ratio {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.date-all-done-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  font-size: 0.725rem;
+  font-weight: 600;
+}
+
+.date-missed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  font-size: 0.725rem;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .date-missed-badge {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.date-card-tasks {
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empty-tasks-card {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+/* All Tasks Read-Only Status Indicators */
+.all-tasks-status-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.all-tasks-status-icon.covered {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.all-tasks-status-icon.missed {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.all-tasks-status-icon.planned {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1.5px dashed var(--border-hover);
+}
+
+.all-tasks-subtopic-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 8px;
+}
+
+.all-tasks-subtopic-bullet.covered {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.all-tasks-subtopic-bullet.missed {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.all-tasks-subtopic-bullet.planned {
+  border: 1.5px solid var(--border-hover);
+  background-color: transparent;
+}
+
+/* RED HIGHLIGHTING FOR MISSED / UNCOVERED TASKS */
+.task-item.all-tasks-item.missed {
+  background-color: #fff8f8;
+  border: 1px solid #fecdd3;
+  border-left: 4px solid #ef4444;
+}
+
+[data-theme="dark"] .task-item.all-tasks-item.missed {
+  background-color: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  border-left: 4px solid #ef4444;
+}
+
+.task-title.missed-title {
+  color: #b91c1c !important;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .task-title.missed-title {
+  color: #f87171 !important;
+}
+
+.subtopic-text.missed-text {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .subtopic-text.missed-text {
+  color: #fca5a5;
+}
+
+.task-subtopics-badge.missed-badge {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+[data-theme="dark"] .task-subtopics-badge.missed-badge {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.status-indicator.missed {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 /* Empty State */
