@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, LogIn, UserPlus, AlertCircle, Sparkles, KeyRound, ArrowLeft, ArrowRight } from 'lucide-react';
+import { X, LogIn, UserPlus, AlertCircle, Sparkles, KeyRound, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AuthModal() {

@@ -15,7 +15,7 @@ const getMongoUri = () => {
 
 export const config = {
   port: process.env.PORT || 4000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env.NODE_ENV || (process.env.VERCEL === '1' ? 'production' : 'development'),
   frontendUrl: process.env.FRONTEND_URL || 'https://studyspace-zeta.vercel.app',
   mongodbUri: defaultAtlasUri,
   jwtSecret: process.env.JWT_SECRET || 'studyspace_dev_secret_key_2026_jwt_token',

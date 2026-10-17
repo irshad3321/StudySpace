@@ -1175,11 +1175,25 @@ a {
   word-break: break-word;
 }
 
+.task-subtext {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 .task-item.completed .task-title {
   color: var(--text-muted);
   text-decoration: line-through;
   text-decoration-color: var(--border-hover);
   font-weight: 500;
+}
+
+.task-item.completed .task-subtext {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.75;
 }
 
 .task-meta-row {
@@ -1378,6 +1392,13 @@ a {
 .form-input:focus, .form-select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-helper-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 1px;
 }
 
 .modal-footer {

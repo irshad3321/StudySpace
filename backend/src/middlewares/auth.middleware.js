@@ -8,16 +8,16 @@ import { config } from '../config/environment.js';
 export const protect = async (req, res, next) => {
   let token;
 
-  // 1. Extract from httpOnly cookie first
-  if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-  // 2. Fallback to Authorization Bearer header
-  else if (
+  // 1. Extract from Authorization Bearer header first (most reliable for cross-origin SPAs)
+  if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer ')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // 2. Fallback to httpOnly cookie
+  else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {
@@ -39,6 +39,7 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = user;
+    req.userId = user._id;
     next();
   } catch (error) {
     return res.status(401).json({

@@ -122,8 +122,12 @@ export default function Settings() {
                     onChange={(e) => setTempName(e.target.value)}
                     autoFocus
                   />
-                  <button className="btn-primary btn-sm" onClick={handleSaveName}>
-                    Save
+                  <button 
+                    className="btn-primary btn-sm" 
+                    onClick={handleSaveName}
+                    disabled={savingName}
+                  >
+                    {savingName ? 'Saving...' : 'Save'}
                   </button>
                   <button 
                     className="btn-secondary btn-sm" 

@@ -4,6 +4,7 @@ import { X, Plus, BookOpen } from 'lucide-react';
 export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const [title, setTitle] = useState('');
+  const [details, setDetails] = useState('');
   const [date, setDate] = useState(todayStr);
 
   if (!isOpen) return null;
@@ -15,11 +16,13 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
     onAddTask({
       id: Date.now(),
       title: title.trim(),
+      details: details.trim(),
       date: date || todayStr,
       completed: false
     });
 
     setTitle('');
+    setDetails('');
     setDate(todayStr);
     onClose();
   };
@@ -44,17 +47,34 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div className="form-group">
-              <label htmlFor="task-title" className="form-label">Task Title</label>
+              <label htmlFor="task-title" className="form-label">Task Heading</label>
               <input
                 id="task-title"
                 type="text"
                 className="form-input"
-                placeholder="e.g. Implement Binary Search Tree"
+                placeholder="e.g. Stack, Binary Search Tree, Recursion"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 autoFocus
                 required
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="task-details" className="form-label">
+                Subtopics / Implementation Details
+              </label>
+              <input
+                id="task-details"
+                type="text"
+                className="form-input"
+                placeholder="e.g. implementation, stack using linked list"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+              />
+              <span className="form-helper-text">
+                Add your custom subtopics or focus steps manually.
+              </span>
             </div>
 
             <div className="form-group">

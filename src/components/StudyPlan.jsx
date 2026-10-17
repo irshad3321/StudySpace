@@ -120,6 +120,9 @@ export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAdd
 
                   <div className="task-details">
                     <span className="task-title">{task.title}</span>
+                    {task.details && (
+                      <span className="task-subtext">{task.details}</span>
+                    )}
                   </div>
                 </div>
 

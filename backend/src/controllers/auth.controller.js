@@ -11,7 +11,7 @@ const generateToken = (id) => {
 
 // Helper to set httpOnly cookie for JWT
 const sendTokenCookie = (res, token) => {
-  const isProd = config.nodeEnv === 'production';
+  const isProd = config.nodeEnv === 'production' || process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
   res.cookie('token', token, {
     httpOnly: true,
     secure: isProd,
@@ -65,8 +65,10 @@ export const register = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
+      token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         track: user.track
@@ -116,8 +118,10 @@ export const login = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Logged in successfully',
+      token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         track: user.track
@@ -134,7 +138,7 @@ export const login = async (req, res, next) => {
  */
 export const logout = async (req, res, next) => {
   try {
-    const isProd = config.nodeEnv === 'production';
+    const isProd = config.nodeEnv === 'production' || process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
     res.cookie('token', '', {
       httpOnly: true,
       expires: new Date(0),
@@ -190,8 +194,10 @@ export const resetPassword = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Password reset successfully! You are now logged in.',
+      token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         track: user.track
@@ -210,7 +216,13 @@ export const getMe = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      user: req.user
+      user: {
+        id: req.user._id,
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        track: req.user.track
+      }
     });
   } catch (error) {
     next(error);
@@ -224,7 +236,8 @@ export const getMe = async (req, res, next) => {
 export const updateProfile = async (req, res, next) => {
   try {
     const { name, track } = req.body;
-    const user = await User.findById(req.userId);
+    const userId = req.userId || req.user?._id;
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({
@@ -248,6 +261,7 @@ export const updateProfile = async (req, res, next) => {
       message: 'Profile updated successfully',
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         track: user.track

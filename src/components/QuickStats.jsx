@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Flame, Clock, TrendingUp } from 'lucide-react';
 
 export default function QuickStats({ tasks = [] }) {
   const total = tasks.length;
