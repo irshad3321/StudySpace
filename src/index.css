@@ -1183,6 +1183,88 @@ a {
   word-break: break-word;
 }
 
+.task-subtopics-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-subtle);
+  color: var(--accent);
+  border: 1px solid var(--border-default);
+  display: inline-flex;
+  align-items: center;
+}
+
+.task-subtopics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 2px;
+}
+
+.subtopic-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.subtopic-circle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.subtopic-circle-empty {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-hover);
+  background-color: transparent;
+  transition: all var(--transition-fast);
+  display: block;
+}
+
+.subtopic-circle-btn:hover .subtopic-circle-empty {
+  border-color: var(--accent);
+  background-color: var(--accent-subtle);
+  transform: scale(1.15);
+}
+
+.subtopic-circle-checked {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  border: 1.5px solid var(--accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.subtopic-text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  transition: all var(--transition-fast);
+}
+
+.subtopic-item.completed .subtopic-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
 .task-item.completed .task-title {
   color: var(--text-muted);
   text-decoration: line-through;
@@ -1194,6 +1276,91 @@ a {
   color: var(--text-muted);
   text-decoration: line-through;
   opacity: 0.75;
+}
+
+/* Modal Subtopics Builder */
+.subtopic-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.subtopic-input-row .form-input {
+  flex: 1;
+}
+
+.subtopic-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.subtopic-add-btn:hover {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.modal-subtopics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.modal-subtopic-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--text-main);
+}
+
+.modal-subtopic-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.modal-subtopic-remove {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.modal-subtopic-remove:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .task-meta-row {

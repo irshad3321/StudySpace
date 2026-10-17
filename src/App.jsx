@@ -66,12 +66,43 @@ export default function App() {
     return <LoginPage />;
   }
 
-  // Toggle task completion
+  // Toggle task completion (and synchronize subtopics if any)
   const handleToggleTask = (taskId) => {
     setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
+      prevTasks.map((task) => {
+        if (task.id === taskId) {
+          const nextCompleted = !task.completed;
+          return {
+            ...task,
+            completed: nextCompleted,
+            subtopics: Array.isArray(task.subtopics)
+              ? task.subtopics.map((sub) => ({ ...sub, completed: nextCompleted }))
+              : []
+          };
+        }
+        return task;
+      })
+    );
+  };
+
+  // Toggle individual subtopic completion
+  const handleToggleSubtopic = (taskId, subtopicId) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id === taskId) {
+          const currentSubtopics = Array.isArray(task.subtopics) ? task.subtopics : [];
+          const updatedSubtopics = currentSubtopics.map((sub) =>
+            sub.id === subtopicId ? { ...sub, completed: !sub.completed } : sub
+          );
+          const allCompleted = updatedSubtopics.length > 0 && updatedSubtopics.every((s) => s.completed);
+          return {
+            ...task,
+            subtopics: updatedSubtopics,
+            completed: allCompleted
+          };
+        }
+        return task;
+      })
     );
   };
 
@@ -150,6 +181,7 @@ export default function App() {
             <StudyPlan
               tasks={tasks}
               onToggleTask={handleToggleTask}
+              onToggleSubtopic={handleToggleSubtopic}
               onDeleteTask={handleDeleteTask}
               onOpenAddModal={() => setIsModalOpen(true)}
             />
@@ -160,6 +192,7 @@ export default function App() {
             <AllTasks
               tasks={tasks}
               onToggleTask={handleToggleTask}
+              onToggleSubtopic={handleToggleSubtopic}
               onDeleteTask={handleDeleteTask}
               onOpenAddModal={() => setIsModalOpen(true)}
             />

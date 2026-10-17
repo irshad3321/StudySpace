@@ -4,25 +4,63 @@ import { X, Plus, BookOpen } from 'lucide-react';
 export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const [title, setTitle] = useState('');
-  const [details, setDetails] = useState('');
+  const [subtopics, setSubtopics] = useState([]);
+  const [currentSubtopic, setCurrentSubtopic] = useState('');
   const [date, setDate] = useState(todayStr);
 
   if (!isOpen) return null;
+
+  const handleAddSubtopic = () => {
+    const trimmed = currentSubtopic.trim();
+    if (!trimmed) return;
+
+    setSubtopics((prev) => [
+      ...prev,
+      {
+        id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        text: trimmed,
+        completed: false
+      }
+    ]);
+    setCurrentSubtopic('');
+  };
+
+  const handleKeyDownSubtopic = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSubtopic();
+    }
+  };
+
+  const handleRemoveSubtopic = (idToRemove) => {
+    setSubtopics((prev) => prev.filter((s) => s.id !== idToRemove));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    // If there is any uncommitted text in the subtopic input, add it as well
+    const finalSubtopics = [...subtopics];
+    if (currentSubtopic.trim()) {
+      finalSubtopics.push({
+        id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        text: currentSubtopic.trim(),
+        completed: false
+      });
+    }
+
     onAddTask({
       id: Date.now(),
       title: title.trim(),
-      details: details.trim(),
+      subtopics: finalSubtopics,
       date: date || todayStr,
       completed: false
     });
 
     setTitle('');
-    setDetails('');
+    setSubtopics([]);
+    setCurrentSubtopic('');
     setDate(todayStr);
     onClose();
   };
@@ -61,20 +99,63 @@ export default function AddTaskModal({ isOpen, onClose, onAddTask }) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="task-details" className="form-label">
-                Subtopics / Implementation Details
-              </label>
-              <input
-                id="task-details"
-                type="text"
-                className="form-input"
-                placeholder="e.g. implementation, stack using linked list"
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label htmlFor="task-subtopic" className="form-label">
+                  Subtopics / Checklist Items
+                </label>
+                {subtopics.length > 0 && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
+                    {subtopics.length} {subtopics.length === 1 ? 'subtopic' : 'subtopics'} added
+                  </span>
+                )}
+              </div>
+
+              <div className="subtopic-input-row">
+                <input
+                  id="task-subtopic"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. implementation, stack using linked list"
+                  value={currentSubtopic}
+                  onChange={(e) => setCurrentSubtopic(e.target.value)}
+                  onKeyDown={handleKeyDownSubtopic}
+                />
+                <button
+                  type="button"
+                  className="subtopic-add-btn"
+                  onClick={handleAddSubtopic}
+                  title="Add subtopic"
+                >
+                  <Plus size={15} />
+                  <span>Add</span>
+                </button>
+              </div>
               <span className="form-helper-text">
-                Add your custom subtopics or focus steps manually.
+                Type a topic and press Enter or click Add to add multiple subtopics.
               </span>
+
+              {/* Render added subtopics chips */}
+              {subtopics.length > 0 && (
+                <div className="modal-subtopics-list">
+                  {subtopics.map((sub) => (
+                    <div key={sub.id} className="modal-subtopic-chip">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span className="modal-subtopic-bullet" />
+                        <span style={{ wordBreak: 'break-word' }}>{sub.text}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="modal-subtopic-remove"
+                        onClick={() => handleRemoveSubtopic(sub.id)}
+                        aria-label={`Remove ${sub.text}`}
+                        title="Remove subtopic"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-group">

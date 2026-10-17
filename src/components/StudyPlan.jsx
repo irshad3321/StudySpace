@@ -8,7 +8,7 @@ import {
   BookOpen
 } from 'lucide-react';
 
-export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAddModal }) {
+export default function StudyPlan({ tasks, onToggleTask, onToggleSubtopic, onDeleteTask, onOpenAddModal }) {
   const [filter, setFilter] = useState('all');
 
   const filteredTasks = tasks.filter(task => {
@@ -100,6 +100,9 @@ export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAdd
         ) : (
           filteredTasks.map((task) => {
             const isDone = task.completed;
+            const hasSubtopics = Array.isArray(task.subtopics) && task.subtopics.length > 0;
+            const completedSubs = hasSubtopics ? task.subtopics.filter(s => s.completed).length : 0;
+
             return (
               <div 
                 key={task.id} 
@@ -119,8 +122,51 @@ export default function StudyPlan({ tasks, onToggleTask, onDeleteTask, onOpenAdd
                   </button>
 
                   <div className="task-details">
-                    <span className="task-title">{task.title}</span>
-                    {task.details && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className="task-title">{task.title}</span>
+                      {hasSubtopics && (
+                        <span className="task-subtopics-badge">
+                          {completedSubs}/{task.subtopics.length} done
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Multiple Subtopics with small circular checkmarks */}
+                    {hasSubtopics && (
+                      <div className="task-subtopics-list">
+                        {task.subtopics.map((sub) => {
+                          const isSubDone = sub.completed;
+                          return (
+                            <div 
+                              key={sub.id} 
+                              className={`subtopic-item ${isSubDone ? 'completed' : ''}`}
+                            >
+                              <button
+                                type="button"
+                                role="checkbox"
+                                aria-checked={isSubDone}
+                                className="subtopic-circle-btn"
+                                onClick={() => onToggleSubtopic && onToggleSubtopic(task.id, sub.id)}
+                                aria-label={`Mark "${sub.text}" as ${isSubDone ? 'incomplete' : 'complete'}`}
+                                title={isSubDone ? 'Mark as incomplete' : 'Mark as complete'}
+                              >
+                                {isSubDone ? (
+                                  <span className="subtopic-circle-checked">
+                                    <Check size={9} strokeWidth={3.5} />
+                                  </span>
+                                ) : (
+                                  <span className="subtopic-circle-empty" />
+                                )}
+                              </button>
+                              <span className="subtopic-text">{sub.text}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Backwards compatibility for single-detail tasks */}
+                    {task.details && !hasSubtopics && (
                       <span className="task-subtext">{task.details}</span>
                     )}
                   </div>
