@@ -17,20 +17,28 @@ export default function Settings() {
 
   const [name, setName] = useState(user?.name || savedPrefs.name || 'Irshad');
   const [email] = useState(user?.email || savedPrefs.email || 'irshad@example.com');
-  const [darkMode, setDarkMode] = useState(savedPrefs.darkMode || false);
-  const [reminder, setReminder] = useState(savedPrefs.reminder || false);
+  const [darkMode, setDarkMode] = useState(user?.settings?.darkMode ?? savedPrefs.darkMode ?? false);
+  const [reminder, setReminder] = useState(user?.settings?.reminder ?? savedPrefs.reminder ?? false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(name);
   const [saveBanner, setSaveBanner] = useState('');
 
-  // Keep name in sync if user loads later
+  // Keep name and settings in sync if user loads later
   useEffect(() => {
     if (user?.name) {
       setName(user.name);
       setTempName(user.name);
     }
-  }, [user?.name]);
+    if (user?.settings) {
+      if (typeof user.settings.darkMode === 'boolean') {
+        setDarkMode(user.settings.darkMode);
+      }
+      if (typeof user.settings.reminder === 'boolean') {
+        setReminder(user.settings.reminder);
+      }
+    }
+  }, [user]);
 
   // Apply dark mode theme to HTML root
   useEffect(() => {
@@ -41,7 +49,7 @@ export default function Settings() {
     }
   }, [darkMode]);
 
-  // Persist preferences
+  // Persist preferences locally
   useEffect(() => {
     const prefs = {
       name,
@@ -79,14 +87,32 @@ export default function Settings() {
     }
   };
 
-  const handleToggleDarkMode = () => {
-    setDarkMode((prev) => !prev);
-    showNotification(!darkMode ? 'Dark mode enabled' : 'Light mode enabled');
+  const handleToggleDarkMode = async () => {
+    const nextVal = !darkMode;
+    setDarkMode(nextVal);
+    showNotification(nextVal ? 'Dark mode enabled' : 'Light mode enabled');
+    if (updateUserProfile) {
+      await updateUserProfile({
+        settings: {
+          darkMode: nextVal,
+          reminder
+        }
+      });
+    }
   };
 
-  const handleToggleReminder = () => {
-    setReminder((prev) => !prev);
-    showNotification(!reminder ? 'Daily reminders enabled' : 'Daily reminders disabled');
+  const handleToggleReminder = async () => {
+    const nextVal = !reminder;
+    setReminder(nextVal);
+    showNotification(nextVal ? 'Daily reminders enabled' : 'Daily reminders disabled');
+    if (updateUserProfile) {
+      await updateUserProfile({
+        settings: {
+          darkMode,
+          reminder: nextVal
+        }
+      });
+    }
   };
 
   return (

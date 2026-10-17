@@ -71,7 +71,8 @@ export const register = async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        track: user.track
+        track: user.track,
+        settings: user.settings || { darkMode: false, reminder: false }
       }
     });
   } catch (error) {
@@ -124,7 +125,8 @@ export const login = async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        track: user.track
+        track: user.track,
+        settings: user.settings || { darkMode: false, reminder: false }
       }
     });
   } catch (error) {
@@ -221,7 +223,8 @@ export const getMe = async (req, res, next) => {
         _id: req.user._id,
         name: req.user.name,
         email: req.user.email,
-        track: req.user.track
+        track: req.user.track,
+        settings: req.user.settings || { darkMode: false, reminder: false }
       }
     });
   } catch (error) {
@@ -235,7 +238,7 @@ export const getMe = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, track } = req.body;
+    const { name, track, settings } = req.body;
     const userId = req.userId || req.user?._id;
     const user = await User.findById(userId);
 
@@ -254,6 +257,13 @@ export const updateProfile = async (req, res, next) => {
       user.track = track.trim();
     }
 
+    if (settings && typeof settings === 'object') {
+      user.settings = {
+        ...(user.settings ? user.settings.toObject ? user.settings.toObject() : user.settings : {}),
+        ...settings
+      };
+    }
+
     await user.save();
 
     res.status(200).json({
@@ -264,7 +274,8 @@ export const updateProfile = async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        track: user.track
+        track: user.track,
+        settings: user.settings
       }
     });
   } catch (error) {

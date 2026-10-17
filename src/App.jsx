@@ -11,11 +11,18 @@ import AuthModal from './components/AuthModal';
 import LoginPage from './components/LoginPage';
 import Settings from './components/Settings';
 import { useAuth } from './context/AuthContext';
+import {
+  fetchTasksAPI,
+  createTaskAPI,
+  updateTaskAPI,
+  deleteTaskAPI,
+  syncTasksAPI
+} from './services/taskService';
 
 export default function App() {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  // Load user's tasks from localStorage (defaults to empty array - no dummy data)
+  // Load initial tasks from localStorage cache for instant render without blank wait
   const [tasks, setTasks] = useState(() => {
     try {
       const storageKey = user ? `studyspace_tasks_${user.id || user._id || 'guest'}` : 'studyspace_tasks';
@@ -30,27 +37,62 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'error'
 
-  // Sync user-specific tasks when user logs in or switches
+  // Sync user-specific tasks from MongoDB cloud database when user logs in or switches
   useEffect(() => {
-    if (user) {
-      const storageKey = `studyspace_tasks_${user.id || user._id || 'guest'}`;
+    if (!isAuthenticated || !user) return;
+
+    let isMounted = true;
+    const userId = user.id || user._id;
+    const storageKey = `studyspace_tasks_${userId}`;
+
+    // Apply dark mode theme if configured in user profile
+    if (user.settings?.darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    const loadCloudTasks = async () => {
+      setSyncStatus('syncing');
+
       try {
-        const saved = localStorage.getItem(storageKey);
-        setTasks(saved ? JSON.parse(saved) : []);
-      } catch {
-        setTasks([]);
-      }
-    }
-  }, [user?.id, user?._id]);
+        // Check if there are local tasks saved from before cloud sync
+        let localTasks = [];
+        try {
+          const cached = localStorage.getItem(storageKey);
+          if (cached) localTasks = JSON.parse(cached);
+        } catch {
+          localTasks = [];
+        }
 
-  // Sync tasks with localStorage whenever tasks state or user changes
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const storageKey = `studyspace_tasks_${user.id || user._id || 'guest'}`;
-      localStorage.setItem(storageKey, JSON.stringify(tasks));
-    }
-  }, [tasks, isAuthenticated, user]);
+        let cloudTasks = [];
+
+        // If user had local tasks, sync them to MongoDB so no prior work is lost
+        if (localTasks.length > 0) {
+          cloudTasks = await syncTasksAPI(localTasks);
+        } else {
+          cloudTasks = await fetchTasksAPI();
+        }
+
+        if (isMounted) {
+          setTasks(cloudTasks);
+          localStorage.setItem(storageKey, JSON.stringify(cloudTasks));
+          setSyncStatus('synced');
+        }
+      } catch (err) {
+        console.warn('Could not load tasks from MongoDB, using local cache:', err);
+        if (isMounted) {
+          setSyncStatus('error');
+        }
+      }
+    };
+
+    loadCloudTasks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, user?.id, user?._id]);
 
   // Session Verification Loading Guard
   if (isLoading) {
@@ -68,53 +110,147 @@ export default function App() {
   }
 
   // Toggle task completion (and synchronize subtopics if any)
-  const handleToggleTask = (taskId) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
+  const handleToggleTask = async (taskId) => {
+    let updatedTask = null;
+
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.map((task) => {
+        if (task.id === taskId || task._id === taskId) {
           const nextCompleted = !task.completed;
-          return {
+          updatedTask = {
             ...task,
             completed: nextCompleted,
             subtopics: Array.isArray(task.subtopics)
               ? task.subtopics.map((sub) => ({ ...sub, completed: nextCompleted }))
               : []
           };
+          return updatedTask;
         }
         return task;
-      })
-    );
+      });
+
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    if (updatedTask && (updatedTask._id || updatedTask.id)) {
+      setSyncStatus('syncing');
+      try {
+        const targetId = updatedTask._id || updatedTask.id;
+        await updateTaskAPI(targetId, {
+          completed: updatedTask.completed,
+          subtopics: updatedTask.subtopics
+        });
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error('Failed to sync toggle to cloud:', err);
+        setSyncStatus('error');
+      }
+    }
   };
 
   // Toggle individual subtopic completion
-  const handleToggleSubtopic = (taskId, subtopicId) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
+  const handleToggleSubtopic = async (taskId, subtopicId) => {
+    let updatedTask = null;
+
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.map((task) => {
+        if (task.id === taskId || task._id === taskId) {
           const currentSubtopics = Array.isArray(task.subtopics) ? task.subtopics : [];
           const updatedSubtopics = currentSubtopics.map((sub) =>
             sub.id === subtopicId ? { ...sub, completed: !sub.completed } : sub
           );
           const allCompleted = updatedSubtopics.length > 0 && updatedSubtopics.every((s) => s.completed);
-          return {
+          updatedTask = {
             ...task,
             subtopics: updatedSubtopics,
             completed: allCompleted
           };
+          return updatedTask;
         }
         return task;
-      })
-    );
+      });
+
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    if (updatedTask && (updatedTask._id || updatedTask.id)) {
+      setSyncStatus('syncing');
+      try {
+        const targetId = updatedTask._id || updatedTask.id;
+        await updateTaskAPI(targetId, {
+          completed: updatedTask.completed,
+          subtopics: updatedTask.subtopics
+        });
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error('Failed to sync subtopic toggle to cloud:', err);
+        setSyncStatus('error');
+      }
+    }
   };
 
   // Delete task
-  const handleDeleteTask = (taskId) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+  const handleDeleteTask = async (taskId) => {
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.filter((task) => task.id !== taskId && task._id !== taskId);
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    if (taskId) {
+      setSyncStatus('syncing');
+      try {
+        await deleteTaskAPI(taskId);
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error('Failed to delete task from cloud:', err);
+        setSyncStatus('error');
+      }
+    }
   };
 
   // Add new task
-  const handleAddTask = (newTask) => {
-    setTasks((prevTasks) => [newTask, ...prevTasks]);
+  const handleAddTask = async (newTaskData) => {
+    // Optimistic temporary task for instant UI feedback
+    const tempId = `temp_${Date.now()}`;
+    const optimisticTask = {
+      ...newTaskData,
+      id: tempId,
+      _id: tempId
+    };
+
+    setTasks((prevTasks) => [optimisticTask, ...prevTasks]);
+    setSyncStatus('syncing');
+
+    try {
+      const savedTask = await createTaskAPI(newTaskData);
+      setTasks((prevTasks) =>
+        prevTasks.map((t) => (t.id === tempId || t._id === tempId ? savedTask : t))
+      );
+
+      const userId = user?.id || user?._id;
+      if (userId) {
+        setTasks((current) => {
+          localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(current));
+          return current;
+        });
+      }
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Failed to save task to cloud:', err);
+      setSyncStatus('error');
+    }
   };
 
   // Open edit modal for a task
@@ -124,10 +260,29 @@ export default function App() {
   };
 
   // Edit task handler
-  const handleEditTask = (updatedTask) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-    );
+  const handleEditTask = async (updatedTask) => {
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.map((t) =>
+        (t.id === updatedTask.id || t._id === updatedTask._id ? updatedTask : t)
+      );
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    const targetId = updatedTask._id || updatedTask.id;
+    if (targetId) {
+      setSyncStatus('syncing');
+      try {
+        await updateTaskAPI(targetId, updatedTask);
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error('Failed to save edited task to cloud:', err);
+        setSyncStatus('error');
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -150,7 +305,10 @@ export default function App() {
 
       {/* Main Content Workspace */}
       <div className="main-wrapper">
-        <Header onOpenSidebar={() => setSidebarOpen(true)} />
+        <Header 
+          onOpenSidebar={() => setSidebarOpen(true)} 
+          syncStatus={syncStatus}
+        />
 
         <main className="dashboard-content">
           {/* View: Dashboard (Progress Overview & Quick Stats only, no task list) */}

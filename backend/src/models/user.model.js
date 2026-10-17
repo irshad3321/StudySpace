@@ -30,6 +30,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'DSA & CS Prep',
       trim: true
+    },
+    settings: {
+      darkMode: {
+        type: Boolean,
+        default: false
+      },
+      reminder: {
+        type: Boolean,
+        default: false
+      }
     }
   },
   {

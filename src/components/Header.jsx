@@ -1,8 +1,7 @@
-import React from 'react';
-import { Menu, Bell, Calendar as CalendarIcon, LogIn } from 'lucide-react';
+import { Menu, Bell, Calendar as CalendarIcon, LogIn, CloudCheck, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Header({ onOpenSidebar }) {
+export default function Header({ onOpenSidebar, syncStatus = 'synced' }) {
   const { user, openAuthModal } = useAuth();
 
   // Format current date nicely
@@ -51,6 +50,36 @@ export default function Header({ onOpenSidebar }) {
       </div>
 
       <div className="header-right">
+        {user && (
+          <div 
+            className={`sync-status-pill ${syncStatus}`} 
+            title={
+              syncStatus === 'syncing' 
+                ? 'Syncing with cloud database...' 
+                : syncStatus === 'error' 
+                ? 'Offline mode - changes cached locally' 
+                : 'All changes synced to cloud account'
+            }
+          >
+            {syncStatus === 'syncing' ? (
+              <>
+                <Loader2 size={13} className="spin-animate sync-icon-syncing" />
+                <span className="sync-pill-text">Syncing...</span>
+              </>
+            ) : syncStatus === 'error' ? (
+              <>
+                <span className="sync-dot-offline" />
+                <span className="sync-pill-text">Offline</span>
+              </>
+            ) : (
+              <>
+                <CloudCheck size={14} className="sync-icon-synced" />
+                <span className="sync-pill-text">Cloud Synced</span>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="date-pill" title="Today's date">
           <CalendarIcon size={14} className="date-icon" />
           <span>{formattedDate}</span>
