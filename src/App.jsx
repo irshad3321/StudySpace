@@ -132,24 +132,26 @@ export default function App() {
 
   // Toggle task completion (and synchronize subtopics if any)
   const handleToggleTask = async (taskId) => {
-    let updatedTask = null;
+    const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (!currentTask) return;
 
+    const nextCompleted = !currentTask.completed;
+    const nextSubtopics = Array.isArray(currentTask.subtopics)
+      ? currentTask.subtopics.map((sub) => ({ ...sub, completed: nextCompleted }))
+      : [];
+    const targetId = currentTask._id || currentTask.id || taskId;
+
+    const updatedTask = {
+      ...currentTask,
+      completed: nextCompleted,
+      subtopics: nextSubtopics
+    };
+
+    // Immediate optimistic local update
     setTasks((prevTasks) => {
-      const nextTasks = prevTasks.map((task) => {
-        if (task.id === taskId || task._id === taskId) {
-          const nextCompleted = !task.completed;
-          updatedTask = {
-            ...task,
-            completed: nextCompleted,
-            subtopics: Array.isArray(task.subtopics)
-              ? task.subtopics.map((sub) => ({ ...sub, completed: nextCompleted }))
-              : []
-          };
-          return updatedTask;
-        }
-        return task;
-      });
-
+      const nextTasks = prevTasks.map((t) =>
+        t.id === taskId || t._id === taskId ? updatedTask : t
+      );
       const userId = user?.id || user?._id;
       if (userId) {
         localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
@@ -157,44 +159,43 @@ export default function App() {
       return nextTasks;
     });
 
-    if (updatedTask && (updatedTask._id || updatedTask.id)) {
-      setSyncStatus('syncing');
-      try {
-        const targetId = updatedTask._id || updatedTask.id;
-        await updateTaskAPI(targetId, {
-          completed: updatedTask.completed,
-          subtopics: updatedTask.subtopics
-        });
-        setSyncStatus('synced');
-      } catch (err) {
-        console.error('Failed to sync toggle to cloud:', err);
-        setSyncStatus('error');
-      }
+    // Immediate cloud database persist
+    setSyncStatus('syncing');
+    try {
+      await updateTaskAPI(targetId, {
+        completed: nextCompleted,
+        subtopics: nextSubtopics
+      });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Failed to sync toggle to cloud:', err);
+      setSyncStatus('error');
     }
   };
 
   // Toggle individual subtopic completion
   const handleToggleSubtopic = async (taskId, subtopicId) => {
-    let updatedTask = null;
+    const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (!currentTask) return;
 
+    const currentSubtopics = Array.isArray(currentTask.subtopics) ? currentTask.subtopics : [];
+    const nextSubtopics = currentSubtopics.map((sub) =>
+      sub.id === subtopicId ? { ...sub, completed: !sub.completed } : sub
+    );
+    const allCompleted = nextSubtopics.length > 0 && nextSubtopics.every((s) => s.completed);
+    const targetId = currentTask._id || currentTask.id || taskId;
+
+    const updatedTask = {
+      ...currentTask,
+      subtopics: nextSubtopics,
+      completed: allCompleted
+    };
+
+    // Immediate optimistic local update
     setTasks((prevTasks) => {
-      const nextTasks = prevTasks.map((task) => {
-        if (task.id === taskId || task._id === taskId) {
-          const currentSubtopics = Array.isArray(task.subtopics) ? task.subtopics : [];
-          const updatedSubtopics = currentSubtopics.map((sub) =>
-            sub.id === subtopicId ? { ...sub, completed: !sub.completed } : sub
-          );
-          const allCompleted = updatedSubtopics.length > 0 && updatedSubtopics.every((s) => s.completed);
-          updatedTask = {
-            ...task,
-            subtopics: updatedSubtopics,
-            completed: allCompleted
-          };
-          return updatedTask;
-        }
-        return task;
-      });
-
+      const nextTasks = prevTasks.map((t) =>
+        t.id === taskId || t._id === taskId ? updatedTask : t
+      );
       const userId = user?.id || user?._id;
       if (userId) {
         localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
@@ -202,24 +203,25 @@ export default function App() {
       return nextTasks;
     });
 
-    if (updatedTask && (updatedTask._id || updatedTask.id)) {
-      setSyncStatus('syncing');
-      try {
-        const targetId = updatedTask._id || updatedTask.id;
-        await updateTaskAPI(targetId, {
-          completed: updatedTask.completed,
-          subtopics: updatedTask.subtopics
-        });
-        setSyncStatus('synced');
-      } catch (err) {
-        console.error('Failed to sync subtopic toggle to cloud:', err);
-        setSyncStatus('error');
-      }
+    // Immediate cloud database persist
+    setSyncStatus('syncing');
+    try {
+      await updateTaskAPI(targetId, {
+        completed: allCompleted,
+        subtopics: nextSubtopics
+      });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Failed to sync subtopic toggle to cloud:', err);
+      setSyncStatus('error');
     }
   };
 
   // Delete task
   const handleDeleteTask = async (taskId) => {
+    const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    const targetId = currentTask ? (currentTask._id || currentTask.id || taskId) : taskId;
+
     setTasks((prevTasks) => {
       const nextTasks = prevTasks.filter((task) => task.id !== taskId && task._id !== taskId);
       const userId = user?.id || user?._id;
@@ -229,10 +231,10 @@ export default function App() {
       return nextTasks;
     });
 
-    if (taskId) {
+    if (targetId) {
       setSyncStatus('syncing');
       try {
-        await deleteTaskAPI(taskId);
+        await deleteTaskAPI(targetId);
         setSyncStatus('synced');
       } catch (err) {
         console.error('Failed to delete task from cloud:', err);

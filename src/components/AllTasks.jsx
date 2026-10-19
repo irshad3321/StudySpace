@@ -234,7 +234,7 @@ export default function AllTasks({ tasks, onEditTask, onDeleteTask, onOpenAddMod
 
                     return (
                       <div 
-                        key={task.id} 
+                        key={task.id || task._id} 
                         className={`task-item all-tasks-item ${isDone ? 'completed' : ''} ${isMissed ? 'missed' : ''}`}
                       >
                         <div className="task-left">
@@ -329,7 +329,7 @@ export default function AllTasks({ tasks, onEditTask, onDeleteTask, onOpenAddMod
                             </button>
                             <button
                               className="task-action-btn delete-btn"
-                              onClick={() => onDeleteTask(task.id)}
+                              onClick={() => onDeleteTask(task.id || task._id)}
                               title="Delete task"
                               aria-label={`Delete task ${task.title}`}
                             >

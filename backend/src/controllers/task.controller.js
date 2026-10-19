@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Task from '../models/task.model.js';
 
 /**
@@ -64,6 +65,13 @@ export const updateTask = async (req, res, next) => {
     const { id } = req.params;
     const { title, subtopics, date, completed, category } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid task ID format'
+      });
+    }
+
     // Find task belonging to this user
     const task = await Task.findOne({ _id: id, user: userId });
 
@@ -75,9 +83,15 @@ export const updateTask = async (req, res, next) => {
     }
 
     if (title !== undefined) task.title = title.trim();
-    if (subtopics !== undefined && Array.isArray(subtopics)) task.subtopics = subtopics;
+    if (subtopics !== undefined && Array.isArray(subtopics)) {
+      task.subtopics = subtopics;
+      task.markModified('subtopics');
+    }
     if (date !== undefined) task.date = date;
-    if (completed !== undefined) task.completed = !!completed;
+    if (completed !== undefined) {
+      task.completed = !!completed;
+      task.markModified('completed');
+    }
     if (category !== undefined) task.category = category.trim();
 
     await task.save();
@@ -100,6 +114,13 @@ export const deleteTask = async (req, res, next) => {
   try {
     const userId = req.userId || req.user?._id;
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid task ID format'
+      });
+    }
 
     const task = await Task.findOneAndDelete({ _id: id, user: userId });
 

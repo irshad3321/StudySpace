@@ -154,7 +154,7 @@ export default function StudyPlan({
 
             return (
               <div 
-                key={task.id} 
+                key={task.id || task._id} 
                 className={`task-item ${isDone ? 'completed' : ''}`}
               >
                 <div className="task-left">
@@ -165,7 +165,7 @@ export default function StudyPlan({
                     aria-checked={isDone}
                     aria-label={`Mark "${task.title}" as ${isDone ? 'incomplete' : 'complete'}`}
                     className="custom-checkbox"
-                    onClick={() => onToggleTask(task.id)}
+                    onClick={() => onToggleTask(task.id || task._id)}
                   >
                     {isDone && <Check size={14} strokeWidth={3} />}
                   </button>
@@ -195,7 +195,7 @@ export default function StudyPlan({
                                 role="checkbox"
                                 aria-checked={isSubDone}
                                 className="subtopic-circle-btn"
-                                onClick={() => onToggleSubtopic && onToggleSubtopic(task.id, sub.id)}
+                                onClick={() => onToggleSubtopic && onToggleSubtopic(task.id || task._id, sub.id)}
                                 aria-label={`Mark "${sub.text}" as ${isSubDone ? 'incomplete' : 'complete'}`}
                                 title={isSubDone ? 'Mark as incomplete' : 'Mark as complete'}
                               >
@@ -256,7 +256,7 @@ export default function StudyPlan({
                     </button>
                     <button
                       className="task-action-btn delete-btn"
-                      onClick={() => onDeleteTask(task.id)}
+                      onClick={() => onDeleteTask(task.id || task._id)}
                       title="Delete task"
                       aria-label={`Delete task ${task.title}`}
                     >
