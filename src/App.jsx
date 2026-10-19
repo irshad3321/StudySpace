@@ -56,7 +56,10 @@ export default function App() {
       setSyncStatus('syncing');
 
       try {
-        // Check if there are local tasks saved from before cloud sync
+        // Fetch source of truth from MongoDB cloud database
+        const cloudTasks = await fetchTasksAPI();
+
+        // Check if there are local tasks that need to be migrated to cloud
         let localTasks = [];
         try {
           const cached = localStorage.getItem(storageKey);
@@ -65,18 +68,16 @@ export default function App() {
           localTasks = [];
         }
 
-        let cloudTasks = [];
+        let finalTasks = cloudTasks;
 
-        // If user had local tasks, sync them to MongoDB so no prior work is lost
-        if (localTasks.length > 0) {
-          cloudTasks = await syncTasksAPI(localTasks);
-        } else {
-          cloudTasks = await fetchTasksAPI();
+        // If cloud is empty but local has tasks, migrate local tasks to MongoDB
+        if ((!cloudTasks || cloudTasks.length === 0) && localTasks.length > 0) {
+          finalTasks = await syncTasksAPI(localTasks);
         }
 
         if (isMounted) {
-          setTasks(cloudTasks);
-          localStorage.setItem(storageKey, JSON.stringify(cloudTasks));
+          setTasks(finalTasks);
+          localStorage.setItem(storageKey, JSON.stringify(finalTasks));
           setSyncStatus('synced');
         }
       } catch (err) {
@@ -89,8 +90,28 @@ export default function App() {
 
     loadCloudTasks();
 
+    // Auto-refresh tasks when returning to the tab (e.g. after adding task on phone)
+    const handleFocusSync = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTasksAPI()
+          .then((cloudTasks) => {
+            if (isMounted && Array.isArray(cloudTasks)) {
+              setTasks(cloudTasks);
+              localStorage.setItem(storageKey, JSON.stringify(cloudTasks));
+              setSyncStatus('synced');
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleFocusSync);
+    window.addEventListener('focus', handleFocusSync);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('visibilitychange', handleFocusSync);
+      window.removeEventListener('focus', handleFocusSync);
     };
   }, [isAuthenticated, user?.id, user?._id]);
 
@@ -235,17 +256,14 @@ export default function App() {
 
     try {
       const savedTask = await createTaskAPI(newTaskData);
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.id === tempId || t._id === tempId ? savedTask : t))
-      );
-
-      const userId = user?.id || user?._id;
-      if (userId) {
-        setTasks((current) => {
-          localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(current));
-          return current;
-        });
-      }
+      setTasks((prevTasks) => {
+        const updated = prevTasks.map((t) => (t.id === tempId || t._id === tempId ? savedTask : t));
+        const userId = user?.id || user?._id;
+        if (userId) {
+          localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(updated));
+        }
+        return updated;
+      });
       setSyncStatus('synced');
     } catch (err) {
       console.error('Failed to save task to cloud:', err);

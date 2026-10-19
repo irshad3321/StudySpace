@@ -1,10 +1,4 @@
-export const API_ROOT = import.meta.env.VITE_API_URL || (
-  typeof window !== 'undefined' &&
-  window.location.hostname !== 'localhost' &&
-  window.location.hostname !== '127.0.0.1'
-    ? 'https://backend-irshad21.vercel.app'
-    : 'http://localhost:4000'
-);
+export const API_ROOT = import.meta.env.VITE_API_URL || 'https://backend-irshad21.vercel.app';
 
 const TASKS_API = `${API_ROOT.replace(/\/$/, '')}/api/tasks`;
 

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-const API_ROOT = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? 'https://backend-irshad21.vercel.app' : 'http://localhost:4000');
+const API_ROOT = import.meta.env.VITE_API_URL || 'https://backend-irshad21.vercel.app';
 const API_BASE_URL = `${API_ROOT.replace(/\/$/, '')}/api/auth`;
 
 export const AuthProvider = ({ children }) => {
