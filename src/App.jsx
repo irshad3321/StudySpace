@@ -130,11 +130,20 @@ export default function App() {
     return <LoginPage />;
   }
 
+  // Helper for timezone-safe local date string YYYY-MM-DD
+  const getLocalDateString = (d = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Toggle task completion (and synchronize subtopics if any)
   const handleToggleTask = async (taskId) => {
     const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
     if (!currentTask) return;
 
+    const todayStr = getLocalDateString();
     const nextCompleted = !currentTask.completed;
     const nextSubtopics = Array.isArray(currentTask.subtopics)
       ? currentTask.subtopics.map((sub) => ({ ...sub, completed: nextCompleted }))
@@ -144,7 +153,8 @@ export default function App() {
     const updatedTask = {
       ...currentTask,
       completed: nextCompleted,
-      subtopics: nextSubtopics
+      subtopics: nextSubtopics,
+      learnedDate: nextCompleted ? todayStr : null
     };
 
     // Immediate optimistic local update
@@ -164,7 +174,8 @@ export default function App() {
     try {
       await updateTaskAPI(targetId, {
         completed: nextCompleted,
-        subtopics: nextSubtopics
+        subtopics: nextSubtopics,
+        learnedDate: nextCompleted ? todayStr : null
       });
       setSyncStatus('synced');
     } catch (err) {
@@ -178,6 +189,7 @@ export default function App() {
     const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
     if (!currentTask) return;
 
+    const todayStr = getLocalDateString();
     const currentSubtopics = Array.isArray(currentTask.subtopics) ? currentTask.subtopics : [];
     const nextSubtopics = currentSubtopics.map((sub) =>
       sub.id === subtopicId ? { ...sub, completed: !sub.completed } : sub
@@ -188,7 +200,8 @@ export default function App() {
     const updatedTask = {
       ...currentTask,
       subtopics: nextSubtopics,
-      completed: allCompleted
+      completed: allCompleted,
+      learnedDate: allCompleted ? todayStr : null
     };
 
     // Immediate optimistic local update
@@ -208,11 +221,95 @@ export default function App() {
     try {
       await updateTaskAPI(targetId, {
         completed: allCompleted,
-        subtopics: nextSubtopics
+        subtopics: nextSubtopics,
+        learnedDate: allCompleted ? todayStr : null
       });
       setSyncStatus('synced');
     } catch (err) {
       console.error('Failed to sync subtopic toggle to cloud:', err);
+      setSyncStatus('error');
+    }
+  };
+
+  // Mark missed / yesterday task as learned today (marks all subtopics complete and sets learnedDate)
+  const handleMarkLearnedToday = async (taskId) => {
+    const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (!currentTask) return;
+
+    const todayStr = getLocalDateString();
+    const nextSubtopics = Array.isArray(currentTask.subtopics)
+      ? currentTask.subtopics.map((sub) => ({ ...sub, completed: true }))
+      : [];
+    const targetId = currentTask._id || currentTask.id || taskId;
+
+    const updatedTask = {
+      ...currentTask,
+      completed: true,
+      subtopics: nextSubtopics,
+      learnedDate: todayStr
+    };
+
+    // Optimistic local update
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.map((t) =>
+        t.id === taskId || t._id === taskId ? updatedTask : t
+      );
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    // Immediate cloud database persist
+    setSyncStatus('syncing');
+    try {
+      await updateTaskAPI(targetId, {
+        completed: true,
+        subtopics: nextSubtopics,
+        learnedDate: todayStr
+      });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Failed to mark task learned today in cloud:', err);
+      setSyncStatus('error');
+    }
+  };
+
+  // Move task to today (useful for missed yesterday tasks that student plans to study today)
+  const handleMoveTaskToToday = async (taskId) => {
+    const currentTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (!currentTask) return;
+
+    const todayStr = getLocalDateString();
+    const targetId = currentTask._id || currentTask.id || taskId;
+
+    const updatedTask = {
+      ...currentTask,
+      date: todayStr
+    };
+
+    // Optimistic local update
+    setTasks((prevTasks) => {
+      const nextTasks = prevTasks.map((t) =>
+        t.id === taskId || t._id === taskId ? updatedTask : t
+      );
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_tasks_${userId}`, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
+
+    // Immediate cloud database persist
+    setSyncStatus('syncing');
+    try {
+      await updateTaskAPI(targetId, {
+        date: todayStr
+      });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Failed to move task date to today in cloud:', err);
       setSyncStatus('error');
     }
   };
@@ -389,6 +486,8 @@ export default function App() {
                 setIsModalOpen(true);
               }}
               onSelectNav={(navId) => setActiveNav(navId)}
+              onMarkLearnedToday={handleMarkLearnedToday}
+              onMoveTaskToToday={handleMoveTaskToToday}
             />
           )}
 
@@ -402,6 +501,10 @@ export default function App() {
                 setEditingTask(null);
                 setIsModalOpen(true);
               }}
+              onToggleTask={handleToggleTask}
+              onToggleSubtopic={handleToggleSubtopic}
+              onMarkLearnedToday={handleMarkLearnedToday}
+              onMoveTaskToToday={handleMoveTaskToToday}
             />
           )}
 

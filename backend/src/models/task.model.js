@@ -45,6 +45,10 @@ const taskSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    learnedDate: {
+      type: String,
+      default: null
+    },
     category: {
       type: String,
       default: 'General',

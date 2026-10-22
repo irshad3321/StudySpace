@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, BookOpen, Pencil, Check } from 'lucide-react';
+import { X, Plus, BookOpen, Pencil, Check, Calendar } from 'lucide-react';
+
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function AddTaskModal({ 
   isOpen, 
@@ -8,7 +15,7 @@ export default function AddTaskModal({
   taskToEdit = null, 
   onEditTask = null 
 }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const [title, setTitle] = useState('');
   const [subtopics, setSubtopics] = useState([]);
   const [currentSubtopic, setCurrentSubtopic] = useState('');
@@ -41,7 +48,7 @@ export default function AddTaskModal({
       setDate(todayStr);
       setCurrentSubtopic('');
     }
-  }, [taskToEdit, isOpen]);
+  }, [taskToEdit, isOpen, todayStr]);
 
   if (!isOpen) return null;
 
@@ -95,7 +102,8 @@ export default function AddTaskModal({
         title: title.trim(),
         subtopics: finalSubtopics,
         date: date || todayStr,
-        completed: allDone
+        completed: allDone,
+        learnedDate: allDone ? (taskToEdit.learnedDate || todayStr) : null
       });
     } else if (onAddTask) {
       onAddTask({
@@ -214,7 +222,22 @@ export default function AddTaskModal({
             </div>
 
             <div className="form-group">
-              <label htmlFor="task-date" className="form-label">Scheduled Date</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label htmlFor="task-date" className="form-label" style={{ marginBottom: 0 }}>
+                  Scheduled Date
+                </label>
+                {date !== todayStr && (
+                  <button
+                    type="button"
+                    className="btn-inline-today"
+                    onClick={() => setDate(todayStr)}
+                    title="Set date to today"
+                  >
+                    <Calendar size={12} />
+                    <span>Set to Today</span>
+                  </button>
+                )}
+              </div>
               <input
                 id="task-date"
                 type="date"
@@ -223,6 +246,11 @@ export default function AddTaskModal({
                 onChange={(e) => setDate(e.target.value)}
                 required
               />
+              {date < todayStr && (
+                <span className="form-helper-text" style={{ color: '#d97706', marginTop: '4px' }}>
+                  This task was scheduled in the past. Click "Set to Today" if you are studying it today.
+                </span>
+              )}
             </div>
           </div>
 

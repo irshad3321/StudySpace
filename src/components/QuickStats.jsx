@@ -1,12 +1,49 @@
 import React from 'react';
 import { Flame, Clock, TrendingUp } from 'lucide-react';
 
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function QuickStats({ tasks = [] }) {
   const total = tasks.length;
   const completed = tasks.filter((t) => t.completed).length;
   const pending = total - completed;
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const streak = completed > 0 ? 1 : 0;
+
+  // Calculate streak based on completed tasks across consecutive calendar days
+  const completedDates = new Set(
+    tasks
+      .filter((t) => t.completed)
+      .map((t) => t.learnedDate || t.date)
+      .filter(Boolean)
+  );
+
+  let streak = 0;
+  const today = new Date();
+  const todayStr = getLocalDateString(today);
+  
+  const checkDate = new Date(today);
+  if (completedDates.has(todayStr)) {
+    streak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  } else {
+    // Check if streak was active as of yesterday
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  while (completedDates.has(getLocalDateString(checkDate))) {
+    streak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  // Fallback: If at least one task is completed but dates aren't consecutive, grant 1 day minimum
+  if (streak === 0 && completed > 0) {
+    streak = 1;
+  }
 
   const stats = [
     {

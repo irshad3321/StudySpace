@@ -43,7 +43,8 @@ export const createTaskAPI = async (taskData) => {
       subtopics: taskData.subtopics || [],
       date: taskData.date,
       completed: !!taskData.completed,
-      category: taskData.category || 'General'
+      category: taskData.category || 'General',
+      learnedDate: taskData.learnedDate || null
     })
   });
 

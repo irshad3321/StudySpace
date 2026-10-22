@@ -27,7 +27,7 @@ export const getTasks = async (req, res, next) => {
 export const createTask = async (req, res, next) => {
   try {
     const userId = req.userId || req.user?._id;
-    const { title, subtopics, date, completed, category } = req.body;
+    const { title, subtopics, date, completed, category, learnedDate } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({
@@ -42,7 +42,8 @@ export const createTask = async (req, res, next) => {
       subtopics: Array.isArray(subtopics) ? subtopics : [],
       date: date || new Date().toISOString().split('T')[0],
       completed: !!completed,
-      category: category ? category.trim() : 'General'
+      category: category ? category.trim() : 'General',
+      learnedDate: learnedDate || null
     });
 
     res.status(201).json({
@@ -63,7 +64,7 @@ export const updateTask = async (req, res, next) => {
   try {
     const userId = req.userId || req.user?._id;
     const { id } = req.params;
-    const { title, subtopics, date, completed, category } = req.body;
+    const { title, subtopics, date, completed, category, learnedDate } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -92,6 +93,7 @@ export const updateTask = async (req, res, next) => {
       task.completed = !!completed;
       task.markModified('completed');
     }
+    if (learnedDate !== undefined) task.learnedDate = learnedDate;
     if (category !== undefined) task.category = category.trim();
 
     await task.save();
@@ -178,7 +180,8 @@ export const bulkSyncTasks = async (req, res, next) => {
           subtopics: Array.isArray(t.subtopics) ? t.subtopics : [],
           date: dateKey,
           completed: !!t.completed,
-          category: t.category || 'General'
+          category: t.category || 'General',
+          learnedDate: t.learnedDate || null
         });
         existingKeys.add(matchKey);
       }
