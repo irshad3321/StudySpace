@@ -10,6 +10,7 @@ import AddTaskModal from './components/AddTaskModal';
 import AuthModal from './components/AuthModal';
 import LoginPage from './components/LoginPage';
 import Settings from './components/Settings';
+import Notes from './components/Notes';
 import { useAuth } from './context/AuthContext';
 import {
   fetchTasksAPI,
@@ -18,6 +19,13 @@ import {
   deleteTaskAPI,
   syncTasksAPI
 } from './services/taskService';
+import {
+  fetchNotesAPI,
+  createNoteAPI,
+  updateNoteAPI,
+  deleteNoteAPI,
+  syncNotesAPI
+} from './services/noteService';
 
 export default function App() {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -26,6 +34,17 @@ export default function App() {
   const [tasks, setTasks] = useState(() => {
     try {
       const storageKey = user ? `studyspace_tasks_${user.id || user._id || 'guest'}` : 'studyspace_tasks';
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Load initial notes from localStorage cache for instant zero-latency render
+  const [notes, setNotes] = useState(() => {
+    try {
+      const storageKey = user ? `studyspace_notes_${user.id || user._id || 'guest'}` : 'studyspace_notes';
       const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch {
@@ -88,9 +107,37 @@ export default function App() {
       }
     };
 
-    loadCloudTasks();
+    const loadCloudNotes = async () => {
+      try {
+        const notesStorageKey = `studyspace_notes_${userId}`;
+        const cloudNotes = await fetchNotesAPI();
 
-    // Auto-refresh tasks when returning to the tab (e.g. after adding task on phone)
+        let localNotes = [];
+        try {
+          const cached = localStorage.getItem(notesStorageKey);
+          if (cached) localNotes = JSON.parse(cached);
+        } catch {
+          localNotes = [];
+        }
+
+        let finalNotes = cloudNotes;
+        if ((!cloudNotes || cloudNotes.length === 0) && localNotes.length > 0) {
+          finalNotes = await syncNotesAPI(localNotes);
+        }
+
+        if (isMounted && Array.isArray(finalNotes)) {
+          setNotes(finalNotes);
+          localStorage.setItem(notesStorageKey, JSON.stringify(finalNotes));
+        }
+      } catch (err) {
+        console.warn('Could not load notes from MongoDB, using local cache:', err);
+      }
+    };
+
+    loadCloudTasks();
+    loadCloudNotes();
+
+    // Auto-refresh tasks and notes when returning to the tab (e.g. after adding on phone)
     const handleFocusSync = () => {
       if (document.visibilityState === 'visible') {
         fetchTasksAPI()
@@ -99,6 +146,15 @@ export default function App() {
               setTasks(cloudTasks);
               localStorage.setItem(storageKey, JSON.stringify(cloudTasks));
               setSyncStatus('synced');
+            }
+          })
+          .catch(() => {});
+
+        fetchNotesAPI()
+          .then((cloudNotes) => {
+            if (isMounted && Array.isArray(cloudNotes)) {
+              setNotes(cloudNotes);
+              localStorage.setItem(`studyspace_notes_${userId}`, JSON.stringify(cloudNotes));
             }
           })
           .catch(() => {});
@@ -402,6 +458,82 @@ export default function App() {
     }
   };
 
+  // Add new note
+  const handleAddNote = async (newNoteData) => {
+    const tempId = `note_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const optimisticNote = {
+      ...newNoteData,
+      id: tempId,
+      _id: tempId
+    };
+
+    setNotes((prevNotes) => {
+      const nextNotes = [optimisticNote, ...prevNotes];
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_notes_${userId}`, JSON.stringify(nextNotes));
+      }
+      return nextNotes;
+    });
+
+    setSyncStatus('syncing');
+    try {
+      const savedNote = await createNoteAPI(newNoteData);
+      setNotes((prevNotes) => {
+        const updated = prevNotes.map((n) => (n.id === tempId || n._id === tempId ? savedNote : n));
+        const userId = user?.id || user?._id;
+        if (userId) {
+          localStorage.setItem(`studyspace_notes_${userId}`, JSON.stringify(updated));
+        }
+        return updated;
+      });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.warn('Failed to save note to cloud, cached locally:', err);
+      setSyncStatus('synced');
+    }
+
+    return tempId;
+  };
+
+  // Update note
+  const handleUpdateNote = async (noteId, updatedFields) => {
+    setNotes((prevNotes) => {
+      const nextNotes = prevNotes.map((n) =>
+        n.id === noteId || n._id === noteId ? { ...n, ...updatedFields } : n
+      );
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_notes_${userId}`, JSON.stringify(nextNotes));
+      }
+      return nextNotes;
+    });
+
+    try {
+      await updateNoteAPI(noteId, updatedFields);
+    } catch (err) {
+      console.warn('Failed to update note in cloud, cached locally:', err);
+    }
+  };
+
+  // Delete note
+  const handleDeleteNote = async (noteId) => {
+    setNotes((prevNotes) => {
+      const nextNotes = prevNotes.filter((n) => n.id !== noteId && n._id !== noteId);
+      const userId = user?.id || user?._id;
+      if (userId) {
+        localStorage.setItem(`studyspace_notes_${userId}`, JSON.stringify(nextNotes));
+      }
+      return nextNotes;
+    });
+
+    try {
+      await deleteNoteAPI(noteId);
+    } catch (err) {
+      console.warn('Failed to delete note from cloud, cached locally:', err);
+    }
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingTask(null);
@@ -418,6 +550,7 @@ export default function App() {
         activeNav={activeNav}
         onSelectNav={(navId) => setActiveNav(navId)}
         taskCount={tasks.length}
+        noteCount={notes.length}
       />
 
       {/* Main Content Workspace */}
@@ -505,6 +638,16 @@ export default function App() {
               onToggleSubtopic={handleToggleSubtopic}
               onMarkLearnedToday={handleMarkLearnedToday}
               onMoveTaskToToday={handleMoveTaskToToday}
+            />
+          )}
+
+          {/* View: Study Notes */}
+          {activeNav === 'notes' && (
+            <Notes
+              notes={notes}
+              onAddNote={handleAddNote}
+              onUpdateNote={handleUpdateNote}
+              onDeleteNote={handleDeleteNote}
             />
           )}
 

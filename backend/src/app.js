@@ -5,6 +5,7 @@ import { config } from './config/environment.js';
 import apiRoutes from './routes/api.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import taskRoutes from './routes/task.routes.js';
+import noteRoutes from './routes/note.routes.js';
 import { notFoundHandler } from './middlewares/notFound.middleware.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
@@ -55,6 +56,7 @@ app.get('/', (req, res) => {
 app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/notes', noteRoutes);
 
 // Catch-all 404 Not Found handler for unmatched routes
 app.use(notFoundHandler);

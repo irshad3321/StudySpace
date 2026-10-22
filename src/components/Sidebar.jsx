@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   CalendarRange, 
   CheckSquare, 
+  NotebookPen,
   Settings, 
   X,
   LogOut,
@@ -11,13 +12,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ isOpen, onClose, activeNav, onSelectNav, taskCount }) {
+export default function Sidebar({ isOpen, onClose, activeNav, onSelectNav, taskCount, noteCount }) {
   const { user, logout, openAuthModal } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'plan', label: 'My Study Plan', icon: CalendarRange, badge: taskCount },
     { id: 'tasks', label: 'All Tasks', icon: CheckSquare },
+    { id: 'notes', label: 'Notes', icon: NotebookPen, badge: noteCount },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
